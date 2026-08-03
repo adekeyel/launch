@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * LAUNCH TIME design system
+ * Night-market menu-board palette: deep forest ink, warm paper, marigold
+ * accent. Signature element: the "order ticket" — a perforated receipt
+ * strip used for order cards, since every unit in this app really is a
+ * ticket moving through a kitchen.
+ */
+
+@layer base {
+  html,
+  body {
+    background-color: theme("colors.paper");
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: theme("fontFamily.display");
+    letter-spacing: -0.01em;
+  }
+  :focus-visible {
+    outline: 2px solid theme("colors.marigold.DEFAULT");
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Perforated ticket-stub edge, used on order cards and the checkout summary */
+  .ticket-edge {
+    position: relative;
+  }
+  .ticket-edge::before {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    top: -1px;
+    height: 8px;
+    background-image: radial-gradient(circle at 8px 0, transparent 5px, theme("colors.paper") 5.5px);
+    background-size: 16px 8px;
+    background-repeat: repeat-x;
+  }
+
+  .btn {
+    @apply inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply btn bg-ink text-paper hover:bg-charcoal;
+  }
+  .btn-accent {
+    @apply btn bg-marigold text-ink hover:bg-marigold-dark hover:text-paper;
+  }
+  .btn-outline {
+    @apply btn border border-ink/15 bg-transparent text-ink hover:bg-ink/5;
+  }
+  .btn-danger {
+    @apply btn bg-chili text-white hover:bg-chili/90;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-ink/60;
+  }
+  .field-input {
+    @apply h-11 w-full rounded-xl border border-ink/15 bg-white px-3.5 text-sm text-ink outline-none placeholder:text-ink/35 focus:border-marigold;
+  }
+  .card {
+    @apply rounded-xl2 border border-line bg-card;
+  }
+}
