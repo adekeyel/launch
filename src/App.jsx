@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import Layout from "./components/Layout";
@@ -13,6 +13,7 @@ import FoodDetails from "./pages/FoodDetails";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import MyOrders from "./pages/MyOrders";
+import StaticPage from "./pages/StaticPage";
 import NotFound from "./pages/NotFound";
 
 import VendorDashboard from "./pages/vendor/VendorDashboard";
@@ -24,6 +25,7 @@ import VendorPayouts from "./pages/vendor/VendorPayouts";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminPages from "./pages/admin/AdminPages";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import AdminCampaigns from "./pages/admin/AdminCampaigns";
 import AdminSettlements from "./pages/admin/AdminSettlements";
@@ -41,6 +43,15 @@ export default function App() {
             <Route path="/vendors" element={<Vendors />} />
             <Route path="/vendors/:id" element={<VendorMenu />} />
             <Route path="/foods/:id" element={<FoodDetails />} />
+
+            <Route path="/about" element={<StaticPage title="About us" settingKey="page_about" />} />
+            <Route path="/founder" element={<StaticPage title="About the founder" settingKey="page_founder" />} />
+            <Route path="/terms" element={<StaticPage title="Terms of service" settingKey="page_terms" />} />
+            <Route path="/privacy" element={<StaticPage title="Privacy policy" settingKey="page_privacy" />} />
+
+            {/* Admins log in and are seeded, not self-registered — send these to the one login page */}
+            <Route path="/admin/login" element={<Navigate to="/login" replace />} />
+            <Route path="/admin/register" element={<Navigate to="/login" replace />} />
 
             <Route
               path="/cart"
@@ -137,6 +148,14 @@ export default function App() {
               element={
                 <ProtectedRoute role="admin">
                   <AdminSettings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/pages"
+              element={
+                <ProtectedRoute role="admin">
+                  <AdminPages />
                 </ProtectedRoute>
               }
             />

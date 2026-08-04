@@ -4,6 +4,7 @@ import { listVendors } from "../services/vendors";
 import VendorCard from "../components/VendorCard";
 import Loader from "../components/Loader";
 import EmptyState from "../components/EmptyState";
+import AdvertiseBanner from "../components/AdvertiseBanner";
 import { IconSearch } from "../components/icons";
 
 export default function Vendors() {
@@ -59,6 +60,8 @@ export default function Vendors() {
           Search
         </button>
       </form>
+
+      <AdvertiseBanner />
 
       <div className="mt-8">
         {loading ? (

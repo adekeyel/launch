@@ -2,6 +2,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { IconCart, IconUser } from "./icons";
+import logoIcon from "../assets/logo-icon.png";
 
 const navLinkClass = ({ isActive }) =>
   `text-sm font-medium transition ${isActive ? "text-ink" : "text-ink/55 hover:text-ink"}`;
@@ -21,8 +22,11 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="font-display text-lg font-extrabold tracking-tight text-ink">
-          LAUNCH<span className="text-marigold-dark">TIME</span>
+        <Link to="/" className="flex items-center gap-2">
+          <img src={logoIcon} alt="" className="h-9 w-9 object-contain" />
+          <span className="font-display text-lg font-extrabold tracking-tight text-ink">
+            LAUNCH<span className="text-marigold-dark">TIME</span>
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex">
