@@ -6,16 +6,24 @@ import ErrorBanner from "../../components/ErrorBanner";
 
 const GROUPS = [
   {
+    label: "Payment account (shown to customers at checkout)",
+    keys: ["company_account_name", "company_account_number", "company_bank_name"],
+    forcePublic: true,
+  },
+  {
     label: "OffPay",
     keys: ["offpay_registration_url"],
+    forcePublic: true,
   },
   {
     label: "Pro subscription pricing (₦)",
     keys: ["pro_price_monthly", "pro_price_quarterly", "pro_price_yearly"],
+    forcePublic: true,
   },
   {
     label: "Advertising campaign pricing (₦)",
     keys: ["campaign_price_1day", "campaign_price_3day", "campaign_price_7day", "campaign_price_30day"],
+    forcePublic: true,
   },
   {
     label: "Commission & ranking",
@@ -70,13 +78,16 @@ export default function AdminSettings() {
     load();
   }, []);
 
+  const forcePublicKeys = new Set(GROUPS.filter((g) => g.forcePublic).flatMap((g) => g.keys));
+
   const handleSave = async (key) => {
     setSavingKey(key);
     setError("");
     setSavedKey(null);
     try {
       const current = settings[key];
-      const updated = await updateSetting(key, drafts[key], current?.is_public);
+      const isPublic = forcePublicKeys.has(key) ? true : current?.is_public;
+      const updated = await updateSetting(key, drafts[key], isPublic);
       setSettings((s) => ({ ...s, [key]: updated }));
       setSavedKey(key);
       setTimeout(() => setSavedKey(null), 2000);
@@ -108,8 +119,7 @@ export default function AdminSettings() {
       ) : (
         <div className="mt-6 space-y-8">
           {GROUPS.map((group) => {
-            const rows = group.keys.filter((k) => settings[k]);
-            if (rows.length === 0) return null;
+            const rows = group.keys;
             return (
               <section key={group.label}>
                 <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-wide text-ink/50">
@@ -125,7 +135,7 @@ export default function AdminSettings() {
                       onSave={() => handleSave(key)}
                       saving={savingKey === key}
                       saved={savedKey === key}
-                      isPublic={settings[key]?.is_public}
+                      isPublic={group.forcePublic || settings[key]?.is_public}
                     />
                   ))}
                 </div>

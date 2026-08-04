@@ -1,31 +1,45 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { checkout } from "../services/orders";
+import { getPublicSettings } from "../services/settings";
 import ErrorBanner from "../components/ErrorBanner";
 import EmptyState from "../components/EmptyState";
 import { formatMoney } from "../lib/format";
 import { IconUpload } from "../components/icons";
 
+// Cash on delivery isn't offered — every order is paid into a single company
+// account (card processing is manually confirmed the same way as a transfer
+// until a real payment gateway is integrated).
 const PAYMENT_METHODS = [
-  { value: "cash", label: "Cash on delivery" },
-  { value: "card", label: "Card" },
   { value: "transfer", label: "Bank transfer" },
+  { value: "card", label: "Card" },
 ];
 
 export default function Checkout() {
   const { items, total, refresh } = useCart();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ deliveryAddress: "", phone: "", notes: "", paymentMethod: "cash" });
+  const [form, setForm] = useState({ deliveryAddress: "", phone: "", notes: "", paymentMethod: "transfer" });
   const [receiptFile, setReceiptFile] = useState(null);
+  const [account, setAccount] = useState({});
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    getPublicSettings()
+      .then(setAccount)
+      .catch((err) => console.error("Failed to load payment account details:", err));
+  }, []);
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (!receiptFile) {
+      setError("Upload your payment receipt or screenshot to place the order.");
+      return;
+    }
     setSubmitting(true);
     try {
       await checkout({ ...form, receiptFile });
@@ -53,6 +67,8 @@ export default function Checkout() {
       </div>
     );
   }
+
+  const hasAccountDetails = account.company_account_number || account.company_bank_name;
 
   return (
     <div className="mx-auto grid max-w-4xl gap-10 px-4 py-12 sm:grid-cols-5 sm:px-6">
@@ -102,7 +118,7 @@ export default function Checkout() {
 
         <div>
           <p className="field-label">Payment method</p>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {PAYMENT_METHODS.map((m) => (
               <button
                 key={m.value}
@@ -120,27 +136,58 @@ export default function Checkout() {
           </div>
         </div>
 
-        {form.paymentMethod === "transfer" && (
-          <div>
-            <label className="field-label" htmlFor="receipt">
-              Payment receipt (optional)
-            </label>
-            <label
-              htmlFor="receipt"
-              className="flex h-24 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-ink/20 text-sm text-ink/50 hover:border-marigold hover:text-ink"
-            >
-              <IconUpload className="h-4 w-4" />
-              {receiptFile ? receiptFile.name : "Upload a screenshot or PDF"}
-            </label>
-            <input
-              id="receipt"
-              type="file"
-              accept="image/*,application/pdf"
-              className="hidden"
-              onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
-            />
-          </div>
-        )}
+        <div className="rounded-xl border border-marigold/30 bg-marigold-soft/50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-marigold-dark">Pay into this account</p>
+          {hasAccountDetails ? (
+            <dl className="mt-2 space-y-1 text-sm text-ink">
+              {account.company_bank_name && (
+                <div className="flex justify-between">
+                  <dt className="text-ink/55">Bank</dt>
+                  <dd className="font-medium">{account.company_bank_name}</dd>
+                </div>
+              )}
+              {account.company_account_number && (
+                <div className="flex justify-between">
+                  <dt className="text-ink/55">Account number</dt>
+                  <dd className="font-mono font-semibold">{account.company_account_number}</dd>
+                </div>
+              )}
+              {account.company_account_name && (
+                <div className="flex justify-between">
+                  <dt className="text-ink/55">Account name</dt>
+                  <dd className="font-medium">{account.company_account_name}</dd>
+                </div>
+              )}
+            </dl>
+          ) : (
+            <p className="mt-1 text-sm text-ink/55">Account details haven't been set up yet — check back shortly.</p>
+          )}
+          <p className="mt-3 text-xs text-ink/55">
+            Pay {formatMoney(total)} into this account (card or transfer), then upload your receipt below. We
+            verify payment before the vendor is notified to start preparing your order.
+          </p>
+        </div>
+
+        <div>
+          <label className="field-label" htmlFor="receipt">
+            Payment receipt
+          </label>
+          <label
+            htmlFor="receipt"
+            className="flex h-24 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-ink/20 text-sm text-ink/50 hover:border-marigold hover:text-ink"
+          >
+            <IconUpload className="h-4 w-4" />
+            {receiptFile ? receiptFile.name : "Upload a screenshot or PDF"}
+          </label>
+          <input
+            id="receipt"
+            type="file"
+            accept="image/*,application/pdf"
+            required
+            className="hidden"
+            onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+          />
+        </div>
 
         <button type="submit" disabled={submitting} className="btn-primary w-full">
           {submitting ? "Placing order…" : `Place order — ${formatMoney(total)}`}

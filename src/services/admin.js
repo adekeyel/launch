@@ -49,6 +49,14 @@ export function decideSettlement(id, status) {
   return api.put(`/admin/settlements/${id}`, { status });
 }
 
+// ---- Orders (oversight — view receipts/payment refs, force any status) ----
+export function listAllOrders(params = {}) {
+  return api.get("/admin/orders", params);
+}
+export function forceUpdateOrderStatus(id, status) {
+  return api.put(`/admin/orders/${id}`, { status });
+}
+
 // ---- Analytics ----
 export function getAnalytics() {
   return api.get("/admin/analytics");

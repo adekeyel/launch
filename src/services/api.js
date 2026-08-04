@@ -10,6 +10,7 @@
 
 export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const REQUEST_TIMEOUT_MS = 15_000;
+const UPLOAD_TIMEOUT_MS = 60_000;
 
 export class ApiError extends Error {
   constructor(status, message, errors) {
@@ -89,7 +90,11 @@ async function request(path, opts = {}) {
   if (body !== undefined && !formData) headers["Content-Type"] = "application/json";
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  // Uploads (image/video → Cloudinary) legitimately take longer than a
+  // plain JSON request, especially on a slower connection — give them more
+  // room before treating it as a hang.
+  const timeoutMs = formData ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   let res;
   try {

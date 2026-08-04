@@ -26,6 +26,8 @@ import VendorPayouts from "./pages/vendor/VendorPayouts";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminPages from "./pages/admin/AdminPages";
+import AdminAds from "./pages/admin/AdminAds";
+import AdminOrders from "./pages/admin/AdminOrders";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import AdminCampaigns from "./pages/admin/AdminCampaigns";
 import AdminSettlements from "./pages/admin/AdminSettlements";
@@ -156,6 +158,22 @@ export default function App() {
               element={
                 <ProtectedRoute role="admin">
                   <AdminPages />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/ads"
+              element={
+                <ProtectedRoute role="admin">
+                  <AdminAds />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/orders"
+              element={
+                <ProtectedRoute role="admin">
+                  <AdminOrders />
                 </ProtectedRoute>
               }
             />
