@@ -18,6 +18,7 @@ import StaticPage from "./pages/StaticPage";
 import NotFound from "./pages/NotFound";
 
 import VendorDashboard from "./pages/vendor/VendorDashboard";
+import VendorProfile from "./pages/vendor/VendorProfile";
 import ManageFoods from "./pages/vendor/ManageFoods";
 import FoodForm from "./pages/vendor/FoodForm";
 import ManageOrders from "./pages/vendor/ManageOrders";
@@ -94,6 +95,14 @@ export default function App() {
               element={
                 <ProtectedRoute role="vendor">
                   <VendorDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/vendor/profile"
+              element={
+                <ProtectedRoute role="vendor">
+                  <VendorProfile />
                 </ProtectedRoute>
               }
             />

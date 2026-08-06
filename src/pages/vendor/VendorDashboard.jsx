@@ -113,6 +113,13 @@ export default function VendorDashboard() {
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2">
         <div className="card p-5">
+          <h2 className="font-display text-lg font-bold text-ink">Shop profile</h2>
+          <p className="mt-1 text-sm text-ink/55">Upload your logo and banner, edit your shop details.</p>
+          <Link to="/vendor/profile" className="btn-outline mt-4 w-full">
+            Edit shop profile
+          </Link>
+        </div>
+        <div className="card p-5">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg font-bold text-ink">Menu</h2>
             <Link to="/vendor/foods/new" className="text-sm font-semibold text-marigold-dark hover:underline">
