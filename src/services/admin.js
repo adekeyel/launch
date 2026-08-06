@@ -56,6 +56,9 @@ export function listAllOrders(params = {}) {
 export function forceUpdateOrderStatus(id, status) {
   return api.put(`/admin/orders/${id}`, { status });
 }
+export function verifyOrderPayment(id) {
+  return api.put(`/admin/orders/${id}/verify-payment`);
+}
 
 // ---- Analytics ----
 export function getAnalytics() {

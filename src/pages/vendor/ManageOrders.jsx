@@ -81,7 +81,10 @@ export default function ManageOrders() {
         ) : (
           <ul className="space-y-4">
             {orders.map((order) => {
-              const nextOptions = NEXT_STATUS[order.status] || [];
+              const awaitingPayment = order.status === "pending" && !order.paid_at;
+              const nextOptions = (NEXT_STATUS[order.status] || []).filter(
+                (status) => !(status === "preparing" && awaitingPayment)
+              );
               return (
                 <li key={order.id} className="ticket-edge card p-5 pt-9 shadow-ticket">
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -100,6 +103,12 @@ export default function ManageOrders() {
                     <p className="mt-3 text-sm text-ink/55">Deliver to: {order.delivery_address}</p>
                   )}
                   {order.notes && <p className="mt-1 text-sm italic text-ink/45">"{order.notes}"</p>}
+
+                  {awaitingPayment && (
+                    <p className="mt-3 rounded-lg bg-marigold-soft px-3 py-2 text-xs font-medium text-marigold-dark">
+                      Waiting on payment verification — we'll let you know as soon as you can start preparing this.
+                    </p>
+                  )}
 
                   {nextOptions.length > 0 && (
                     <div className="mt-4 flex flex-wrap gap-2 border-t border-dashed border-line pt-4">

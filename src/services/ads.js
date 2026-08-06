@@ -5,6 +5,10 @@ export function getActiveAds(placement, page) {
   return api.get("/ads", { placement, page });
 }
 
+export function trackAdHit(id, type) {
+  return api.post(`/ads/${id}/track`, { type });
+}
+
 // ---- Admin ----
 export function listAllAds(params = {}) {
   return api.get("/admin/ads", params);

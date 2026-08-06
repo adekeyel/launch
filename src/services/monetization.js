@@ -36,9 +36,13 @@ export function listMyCampaigns() {
 }
 
 // ---- Settlements (payout requests) ----
-export function createSettlement({ amount, paymentRef, note, receiptFile }) {
+// Orders that are delivered + payment-verified + at least a day past
+// verification + not already claimed by a previous request.
+export function listEligibleSettlementOrders() {
+  return api.get("/vendors/me/settlements/eligible");
+}
+export function createSettlement({ paymentRef, note, receiptFile }) {
   const fd = new FormData();
-  fd.set("amount", String(amount));
   fd.set("paymentRef", paymentRef);
   if (note) fd.set("note", note);
   fd.set("receipt", receiptFile);

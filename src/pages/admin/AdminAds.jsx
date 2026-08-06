@@ -99,10 +99,6 @@ export default function AdminAds() {
         tab — both land here once live. Slots: top &amp; bottom (50px tall), middle (100px tall), each full width.
         A slot stays hidden on any page until an ad is actually posted for it.
       </p>
-      <p className="mt-2 max-w-xl rounded-lg bg-ink/5 px-3 py-2 text-xs text-ink/50">
-        Impression/click tracking isn't wired up yet — the ads table has no columns for it. That needs a small
-        backend addition (tracking columns + a hit-counting endpoint); flag it if you want that built next.
-      </p>
 
       <div className="mt-6">
         <ErrorBanner message={error} />
@@ -176,6 +172,9 @@ export default function AdminAds() {
                   <p className="truncate font-semibold text-ink">{ad.title}</p>
                   <p className="text-xs text-ink/45">
                     {ad.placement} · {ad.page} · posted {formatDate(ad.created_at)}
+                  </p>
+                  <p className="text-xs text-ink/45">
+                    {(ad.impressions ?? 0).toLocaleString()} impressions · {(ad.clicks ?? 0).toLocaleString()} clicks
                   </p>
                 </div>
                 <button

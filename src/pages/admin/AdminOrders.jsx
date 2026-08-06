@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listAllOrders, forceUpdateOrderStatus } from "../../services/admin";
+import { listAllOrders, forceUpdateOrderStatus, verifyOrderPayment } from "../../services/admin";
 import { STATUS_LABEL } from "../../services/orders";
 import AdminTabs from "../../components/AdminTabs";
 import Loader from "../../components/Loader";
@@ -49,6 +49,19 @@ export default function AdminOrders() {
     }
   };
 
+  const handleVerifyPayment = async (order) => {
+    setBusyId(order.id);
+    setError("");
+    try {
+      await verifyOrderPayment(order.id);
+      await load();
+    } catch (err) {
+      setError(err?.message || "Couldn't verify payment for this order.");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
       <p className="text-xs font-semibold uppercase tracking-wider text-marigold-dark">Admin</p>
@@ -56,11 +69,10 @@ export default function AdminOrders() {
       <div className="mt-6">
         <AdminTabs />
       </div>
-      <p className="mt-6 max-w-xl rounded-lg bg-ink/5 px-3 py-2 text-xs text-ink/50">
-        There's no automatic payment-verification gate yet — vendors can still self-advance an order without
-        waiting on you. Use this page to check each order's receipt against what landed in the company account,
-        then message the vendor (or use the status override below) once you've confirmed it. A real "held until
-        verified" gate needs a small backend addition — flag it if you want that built next.
+      <p className="mt-6 max-w-xl text-sm text-ink/55">
+        Card payments are verified automatically through Flutterwave. For bank transfers, check the receipt
+        against what landed in the company account, then click "Verify payment" to unlock the vendor's
+        "start preparing" action.
       </p>
 
       <div className="mt-6 flex gap-2 overflow-x-auto">
@@ -95,6 +107,15 @@ export default function AdminOrders() {
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-xs text-ink/40">{orderCode(order.id)}</span>
                       <StatusBadge status={order.status} />
+                      {order.paid_at ? (
+                        <span className="rounded-full bg-basil-soft px-2 py-0.5 text-[11px] font-semibold text-basil">
+                          Paid
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-chili-soft px-2 py-0.5 text-[11px] font-semibold text-chili">
+                          Unverified
+                        </span>
+                      )}
                     </div>
                     <p className="mt-1 font-semibold text-ink">
                       {order.customer_name} → {order.business_name}
@@ -124,13 +145,24 @@ export default function AdminOrders() {
                     >
                       View payment receipt →
                     </a>
+                  ) : order.payment_method === "card" ? (
+                    <p className="text-ink/40">Card payment — no receipt needed, verified via Flutterwave.</p>
                   ) : (
                     <p className="text-chili">No receipt was uploaded for this order.</p>
                   )}
                 </div>
 
                 <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-dashed border-line pt-4">
-                  <span className="text-xs font-medium uppercase tracking-wide text-ink/40">Set status:</span>
+                  {!order.paid_at && order.payment_method === "transfer" && (
+                    <button
+                      onClick={() => handleVerifyPayment(order)}
+                      disabled={busyId === order.id}
+                      className="btn-accent h-8 px-3 text-xs"
+                    >
+                      Verify payment
+                    </button>
+                  )}
+                  <span className="text-xs font-medium uppercase tracking-wide text-ink/40">Override status:</span>
                   {ALL_STATUSES.map((s) => (
                     <button
                       key={s}

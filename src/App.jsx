@@ -12,6 +12,7 @@ import VendorMenu from "./pages/VendorMenu";
 import FoodDetails from "./pages/FoodDetails";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
+import CheckoutCallback from "./pages/CheckoutCallback";
 import MyOrders from "./pages/MyOrders";
 import StaticPage from "./pages/StaticPage";
 import NotFound from "./pages/NotFound";
@@ -68,6 +69,14 @@ export default function App() {
               element={
                 <ProtectedRoute role="customer">
                   <Checkout />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/checkout/callback"
+              element={
+                <ProtectedRoute role="customer">
+                  <CheckoutCallback />
                 </ProtectedRoute>
               }
             />

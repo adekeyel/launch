@@ -8,9 +8,9 @@ import EmptyState from "../components/EmptyState";
 import { formatMoney } from "../lib/format";
 import { IconUpload } from "../components/icons";
 
-// Cash on delivery isn't offered — every order is paid into a single company
-// account (card processing is manually confirmed the same way as a transfer
-// until a real payment gateway is integrated).
+// Cash on delivery isn't offered. Bank transfer is confirmed manually
+// against an uploaded receipt; card is charged and verified automatically
+// through Flutterwave (see /checkout/callback).
 const PAYMENT_METHODS = [
   { value: "transfer", label: "Bank transfer" },
   { value: "card", label: "Card" },
@@ -32,17 +32,24 @@ export default function Checkout() {
   }, []);
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const isTransfer = form.paymentMethod === "transfer";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    if (!receiptFile) {
+    if (isTransfer && !receiptFile) {
       setError("Upload your payment receipt or screenshot to place the order.");
       return;
     }
     setSubmitting(true);
     try {
-      await checkout({ ...form, receiptFile });
+      const result = await checkout({ ...form, receiptFile: isTransfer ? receiptFile : null });
+      if (result.paymentLink) {
+        // Card: hand off to Flutterwave's hosted checkout. It redirects
+        // back to /checkout/callback, which verifies and marks orders paid.
+        window.location.href = result.paymentLink;
+        return;
+      }
       await refresh();
       navigate("/orders", { state: { justOrdered: true } });
     } catch (err) {
@@ -136,61 +143,69 @@ export default function Checkout() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-marigold/30 bg-marigold-soft/50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-marigold-dark">Pay into this account</p>
-          {hasAccountDetails ? (
-            <dl className="mt-2 space-y-1 text-sm text-ink">
-              {account.company_bank_name && (
-                <div className="flex justify-between">
-                  <dt className="text-ink/55">Bank</dt>
-                  <dd className="font-medium">{account.company_bank_name}</dd>
-                </div>
+        {isTransfer ? (
+          <>
+            <div className="rounded-xl border border-marigold/30 bg-marigold-soft/50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-marigold-dark">Pay into this account</p>
+              {hasAccountDetails ? (
+                <dl className="mt-2 space-y-1 text-sm text-ink">
+                  {account.company_bank_name && (
+                    <div className="flex justify-between">
+                      <dt className="text-ink/55">Bank</dt>
+                      <dd className="font-medium">{account.company_bank_name}</dd>
+                    </div>
+                  )}
+                  {account.company_account_number && (
+                    <div className="flex justify-between">
+                      <dt className="text-ink/55">Account number</dt>
+                      <dd className="font-mono font-semibold">{account.company_account_number}</dd>
+                    </div>
+                  )}
+                  {account.company_account_name && (
+                    <div className="flex justify-between">
+                      <dt className="text-ink/55">Account name</dt>
+                      <dd className="font-medium">{account.company_account_name}</dd>
+                    </div>
+                  )}
+                </dl>
+              ) : (
+                <p className="mt-1 text-sm text-ink/55">Account details haven't been set up yet — check back shortly.</p>
               )}
-              {account.company_account_number && (
-                <div className="flex justify-between">
-                  <dt className="text-ink/55">Account number</dt>
-                  <dd className="font-mono font-semibold">{account.company_account_number}</dd>
-                </div>
-              )}
-              {account.company_account_name && (
-                <div className="flex justify-between">
-                  <dt className="text-ink/55">Account name</dt>
-                  <dd className="font-medium">{account.company_account_name}</dd>
-                </div>
-              )}
-            </dl>
-          ) : (
-            <p className="mt-1 text-sm text-ink/55">Account details haven't been set up yet — check back shortly.</p>
-          )}
-          <p className="mt-3 text-xs text-ink/55">
-            Pay {formatMoney(total)} into this account (card or transfer), then upload your receipt below. We
-            verify payment before the vendor is notified to start preparing your order.
-          </p>
-        </div>
+              <p className="mt-3 text-xs text-ink/55">
+                Pay {formatMoney(total)} into this account, then upload your receipt below. We verify payment
+                before the vendor is notified to start preparing your order.
+              </p>
+            </div>
 
-        <div>
-          <label className="field-label" htmlFor="receipt">
-            Payment receipt
-          </label>
-          <label
-            htmlFor="receipt"
-            className="flex h-24 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-ink/20 text-sm text-ink/50 hover:border-marigold hover:text-ink"
-          >
-            <IconUpload className="h-4 w-4" />
-            {receiptFile ? receiptFile.name : "Upload a screenshot or PDF"}
-          </label>
-          <input
-            id="receipt"
-            type="file"
-            accept="image/*,application/pdf"
-            required
-            className="hidden"
-            onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
-          />
-        </div>
+            <div>
+              <label className="field-label" htmlFor="receipt">
+                Payment receipt
+              </label>
+              <label
+                htmlFor="receipt"
+                className="flex h-24 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-ink/20 text-sm text-ink/50 hover:border-marigold hover:text-ink"
+              >
+                <IconUpload className="h-4 w-4" />
+                {receiptFile ? receiptFile.name : "Upload a screenshot or PDF"}
+              </label>
+              <input
+                id="receipt"
+                type="file"
+                accept="image/*,application/pdf"
+                className="hidden"
+                onChange={(e) => setReceiptFile(e.target.files?.[0] || null)}
+              />
+            </div>
+          </>
+        ) : (
+          <div className="rounded-xl border border-marigold/30 bg-marigold-soft/50 p-4 text-sm text-ink/70">
+            You'll be taken to Flutterwave's secure checkout to pay {formatMoney(total)} by card. Payment is
+            verified automatically — no receipt needed.
+          </div>
+        )}
 
         <button type="submit" disabled={submitting} className="btn-primary w-full">
-          {submitting ? "Placing order…" : `Place order — ${formatMoney(total)}`}
+          {submitting ? "Placing order…" : isTransfer ? `Place order — ${formatMoney(total)}` : `Pay ${formatMoney(total)} by card`}
         </button>
       </form>
 

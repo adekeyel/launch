@@ -3,7 +3,7 @@ import Navbar from "./Navbar";
 import Footer from "./Footer";
 import AdSlot from "./AdSlot";
 
-const NO_ADS_PATHS = new Set(["/login", "/register"]);
+const NO_ADS_PATHS = new Set(["/login", "/register", "/checkout/callback"]);
 
 export default function Layout({ children }) {
   const location = useLocation();

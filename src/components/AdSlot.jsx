@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { getActiveAds } from "../services/ads";
+import { getActiveAds, trackAdHit } from "../services/ads";
 
 const SIZE = {
   top: "h-[50px]",
@@ -14,10 +14,12 @@ export default function AdSlot({ placement }) {
   const location = useLocation();
   const [ads, setAds] = useState([]);
   const [index, setIndex] = useState(0);
+  const trackedRef = useRef(new Set());
 
   useEffect(() => {
     let cancelled = false;
     setIndex(0);
+    trackedRef.current = new Set();
     (async () => {
       try {
         const data = await getActiveAds(placement, location.pathname);
@@ -40,9 +42,22 @@ export default function AdSlot({ placement }) {
     return () => clearInterval(timer);
   }, [ads.length]);
 
+  // One impression per ad per time it's shown in this slot (not re-fired on
+  // every rotation loop back to an ad already counted this page view).
+  useEffect(() => {
+    const ad = ads[index];
+    if (!ad || trackedRef.current.has(ad.id)) return;
+    trackedRef.current.add(ad.id);
+    trackAdHit(ad.id, "impression").catch((err) => console.error("Failed to record ad impression:", err));
+  }, [ads, index]);
+
   if (ads.length === 0) return null;
 
   const ad = ads[index];
+
+  const handleClick = () => {
+    trackAdHit(ad.id, "click").catch((err) => console.error("Failed to record ad click:", err));
+  };
 
   return (
     <div className={`relative w-full ${SIZE[placement]} overflow-hidden bg-ink/5`}>
@@ -50,6 +65,7 @@ export default function AdSlot({ placement }) {
         href={ad.link_url || undefined}
         target={ad.link_url ? "_blank" : undefined}
         rel={ad.link_url ? "noopener noreferrer" : undefined}
+        onClick={handleClick}
         className="block h-full w-full"
         aria-label={ad.title || "Sponsored"}
       >
