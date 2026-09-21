@@ -39,6 +39,8 @@ export default function VendorDashboard() {
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
   const [togglingOrders, setTogglingOrders] = useState(false);
+  const [offpayRef, setOffpayRef] = useState("");
+  const [savingRef, setSavingRef] = useState(false);
   const toast = useToast();
 
   // One-tap pause / resume, straight from the dashboard.
@@ -56,6 +58,23 @@ export default function VendorDashboard() {
     }
   };
 
+  // Vendor submits their OffPay account reference so an admin can verify it.
+  const saveOffpayRef = async (e) => {
+    e.preventDefault();
+    if (!offpayRef.trim()) return;
+    setSavingRef(true);
+    try {
+      const updated = await updateMyVendorProfile({ offpay_merchant_ref: offpayRef.trim() });
+      setVendor(updated);
+      toast.success("OffPay reference saved. An admin will verify it shortly.");
+    } catch (err) {
+      console.error("Failed to save OffPay reference:", err);
+      toast.error(errorMessage(err, "Couldn't save that. Please try again."));
+    } finally {
+      setSavingRef(false);
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -69,6 +88,7 @@ export default function VendorDashboard() {
         ]);
         if (!cancelled) {
           setVendor(v);
+          setOffpayRef(v.offpay_merchant_ref || "");
           setFoods(f.foods);
           setOrders(o.orders);
           setSettings(s);
@@ -107,21 +127,54 @@ export default function VendorDashboard() {
         <div className={`mt-6 rounded-xl border px-4 py-3 text-sm ${statusCopy.tone}`}>{statusCopy.text}</div>
       )}
 
-      {vendor.status === "approved" && vendor.tier < 1 && (
+      {(vendor.status === "approved" || vendor.status === "pending") && vendor.tier < 1 && (
         <div className="mt-6 rounded-xl border border-marigold/30 bg-marigold-soft px-4 py-4 text-sm text-marigold-dark">
-          <p className="font-semibold">You're approved — one step left before you can sell.</p>
-          <p className="mt-1 text-marigold-dark/80">
-            Your menu items save as drafts and your shop is hidden from customers until you set up a payment account
-            and an admin verifies it (Tier 1). A 5% platform commission applies to completed orders once you're live.
+          <p className="font-semibold">
+            {vendor.status === "approved"
+              ? "You're approved — one step left before you can sell."
+              : "Set up your OffPay account while you wait for approval."}
           </p>
-          <a
-            href={settings.offpay_registration_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-accent mt-3 inline-flex h-9 px-4 text-xs"
-          >
-            Set up payment account on OffPay
-          </a>
+          <p className="mt-1 text-marigold-dark/80">
+            Every vendor needs an OffPay account — it's where your settlements are paid. Until an admin verifies it
+            (Tier 1), your menu items save as drafts and your shop is hidden from customers. Once verified, your drafts
+            go live automatically. A 5% platform commission applies to completed orders.
+          </p>
+          <ol className="mt-3 list-decimal space-y-1 pl-5 text-marigold-dark/90">
+            <li>Create your OffPay account.</li>
+            <li>Paste your OffPay reference below and save.</li>
+            <li>An admin verifies it and your shop goes live.</li>
+          </ol>
+          {settings.offpay_registration_url && (
+            <a
+              href={settings.offpay_registration_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-accent mt-3 inline-flex h-9 px-4 text-xs"
+            >
+              Set up payment account on OffPay
+            </a>
+          )}
+          <form onSubmit={saveOffpayRef} className="mt-4 flex flex-wrap items-end gap-2">
+            <div className="min-w-[14rem] flex-1">
+              <label className="field-label" htmlFor="offpayRef">
+                Your OffPay account reference
+              </label>
+              <input
+                id="offpayRef"
+                value={offpayRef}
+                onChange={(e) => setOffpayRef(e.target.value)}
+                maxLength={150}
+                className="field-input"
+                placeholder="e.g. the email or merchant ID on your OffPay account"
+              />
+            </div>
+            <button type="submit" disabled={savingRef || !offpayRef.trim()} className="btn-outline h-10">
+              {savingRef ? "Saving…" : "Save"}
+            </button>
+          </form>
+          {vendor.offpay_merchant_ref && (
+            <p className="mt-2 text-xs font-semibold">Submitted — waiting for an admin to verify it.</p>
+          )}
         </div>
       )}
 

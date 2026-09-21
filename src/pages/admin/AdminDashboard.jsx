@@ -44,6 +44,13 @@ export default function AdminDashboard() {
   };
 
   const handleVerify = async (vendor) => {
+    // Verifying without an OffPay reference means settlements have nowhere to go: make it a conscious choice.
+    if (vendor.tier < 1 && !vendor.offpay_merchant_ref) {
+      const proceed = window.confirm(
+        `${vendor.business_name} hasn't submitted an OffPay account reference yet. Verify anyway?`
+      );
+      if (!proceed) return;
+    }
     setBusyId(vendor.id);
     setError("");
     try {
@@ -90,6 +97,14 @@ export default function AdminDashboard() {
                   <p className="text-xs text-ink/45">
                     {vendor.owner_name} · {vendor.owner_email}
                   </p>
+                  <p className="mt-0.5 text-xs text-ink/55">
+                    OffPay:{" "}
+                    {vendor.offpay_merchant_ref ? (
+                      <span className="font-semibold text-ink">{vendor.offpay_merchant_ref}</span>
+                    ) : (
+                      <span className="text-chili">not submitted</span>
+                    )}
+                  </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <select
@@ -104,13 +119,16 @@ export default function AdminDashboard() {
                       </option>
                     ))}
                   </select>
-                  <button
-                    onClick={() => handleVerify(vendor)}
-                    disabled={busyId === vendor.id}
-                    className={vendor.tier >= 1 ? "btn-outline h-9 px-4 text-xs" : "btn-accent h-9 px-4 text-xs"}
-                  >
-                    {vendor.tier >= 1 ? "Un-verify" : "Verify (Tier 1)"}
-                  </button>
+                  {/* Pro/Enterprise (tier 2+) are managed from Subscriptions; un-verifying here would wrongly drop them to tier 0. */}
+                  {vendor.tier < 2 && (
+                    <button
+                      onClick={() => handleVerify(vendor)}
+                      disabled={busyId === vendor.id}
+                      className={vendor.tier >= 1 ? "btn-outline h-9 px-4 text-xs" : "btn-accent h-9 px-4 text-xs"}
+                    >
+                      {vendor.tier >= 1 ? "Un-verify" : "Verify (Tier 1)"}
+                    </button>
+                  )}
                 </div>
               </li>
             ))}

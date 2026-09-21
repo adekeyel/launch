@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authErrorMessage } from "../services/auth";
+import { getPublicSettings } from "../services/settings";
 import ErrorBanner from "../components/ErrorBanner";
 import { useContent } from "../context/ContentContext";
 
@@ -25,6 +26,13 @@ export default function Register() {
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [offpayUrl, setOffpayUrl] = useState("");
+
+  useEffect(() => {
+    getPublicSettings()
+      .then((s) => setOffpayUrl(s?.offpay_registration_url || ""))
+      .catch(() => {});
+  }, []);
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -154,9 +162,26 @@ export default function Register() {
                 placeholder="12 Allen Avenue, Ikeja"
               />
             </div>
+            <div className="rounded-lg border border-ink/10 bg-white p-3 text-xs text-ink/70">
+              <p className="font-semibold text-ink">Every vendor needs an OffPay account</p>
+              <p className="mt-1">
+                OffPay is where your settlements are paid. Create your account first, then add your OffPay reference on
+                your dashboard so we can verify it.
+              </p>
+              {offpayUrl && (
+                <a
+                  href={offpayUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-block font-semibold text-marigold-dark hover:underline"
+                >
+                  Create your OffPay account →
+                </a>
+              )}
+            </div>
             <p className="text-xs text-ink/50">
-              New vendor accounts start pending review. You can add your menu right away, but customers will only
-              see it once an admin verifies your kitchen.
+              New vendor accounts start pending review. You can add your menu right away (saved as drafts), but
+              customers will only see your kitchen once an admin approves it and verifies your OffPay account.
             </p>
           </div>
         )}
