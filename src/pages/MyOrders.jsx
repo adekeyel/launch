@@ -1,36 +1,49 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { listOrders, getOrder } from "../services/orders";
-import Loader from "../components/Loader";
 import EmptyState from "../components/EmptyState";
+import ErrorState from "../components/ErrorState";
+import { ListSkeleton } from "../components/Skeleton";
+import { useToast } from "../context/ToastContext";
+import { errorMessage } from "../lib/errors";
 import { StatusBadge, StatusTimeline } from "../components/StatusBadge";
 import { formatMoney, formatDate, orderCode } from "../lib/format";
+import { orderBreakdown } from "../lib/delivery";
 import { IconChevronRight } from "../components/icons";
+import ReviewForm from "../components/ReviewForm";
+import { StarRating } from "../components/StarRating";
 
 export default function MyOrders() {
   const location = useLocation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const toast = useToast();
   const [expandedId, setExpandedId] = useState(null);
   const [details, setDetails] = useState({});
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const data = await listOrders();
-        if (!cancelled) setOrders(data.orders);
-      } catch (err) {
-        console.error("Failed to load orders:", err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await listOrders();
+      setOrders(data.orders);
+    } catch (err) {
+      console.error("Failed to load orders:", err);
+      setError(errorMessage(err, "We couldn't load your orders."));
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // After a review is saved, mark the order as reviewed without refetching.
+  const markReviewed = (orderId, rating) => {
+    setOrders((list) => list.map((o) => (o.id === orderId ? { ...o, review_rating: rating } : o)));
+  };
 
   const toggleExpand = async (order) => {
     const willExpand = expandedId !== order.id;
@@ -41,6 +54,8 @@ export default function MyOrders() {
         setDetails((d) => ({ ...d, [order.id]: full }));
       } catch (err) {
         console.error("Failed to load order details:", err);
+        toast.error(errorMessage(err, "Couldn't load that order's items. Please try again."));
+        setExpandedId(null);
       }
     }
   };
@@ -57,7 +72,9 @@ export default function MyOrders() {
 
       <div className="mt-8">
         {loading ? (
-          <Loader label="Loading your orders…" />
+          <ListSkeleton rows={3} />
+        ) : error ? (
+          <ErrorState title="Couldn't load your orders" message={error} onRetry={load} />
         ) : orders.length === 0 ? (
           <EmptyState
             title="No orders yet"
@@ -86,6 +103,9 @@ export default function MyOrders() {
                       </div>
                       <p className="mt-1 truncate font-semibold text-ink">{order.business_name}</p>
                       <p className="text-xs text-ink/45">{formatDate(order.created_at)}</p>
+                      {order.status === "delivered" && order.review_rating == null && (
+                        <p className="mt-1 text-xs font-semibold text-marigold-dark">Rate this order</p>
+                      )}
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
                       <span className="font-mono font-semibold text-ink">{formatMoney(order.total)}</span>
@@ -110,9 +130,40 @@ export default function MyOrders() {
                           ))}
                         </ul>
                       )}
+                      {(() => {
+                        const { subtotal, fee, total } = orderBreakdown(order);
+                        return (
+                          <dl className="mt-4 space-y-1 border-t border-dashed border-line pt-3 text-sm">
+                            <div className="flex justify-between text-ink/60">
+                              <dt>Food</dt>
+                              <dd className="font-mono">{formatMoney(subtotal)}</dd>
+                            </div>
+                            <div className="flex justify-between text-ink/60">
+                              <dt>Delivery</dt>
+                              <dd className="font-mono">{fee > 0 ? formatMoney(fee) : "Free"}</dd>
+                            </div>
+                            <div className="flex justify-between font-semibold text-ink">
+                              <dt>Total</dt>
+                              <dd className="font-mono">{formatMoney(total)}</dd>
+                            </div>
+                          </dl>
+                        );
+                      })()}
                       {order.delivery_address && (
                         <p className="mt-4 text-xs text-ink/45">Delivering to: {order.delivery_address}</p>
                       )}
+                      {order.status === "delivered" &&
+                        (order.review_rating != null ? (
+                          <p className="mt-4 flex items-center gap-2 text-sm text-ink/60">
+                            You rated this order <StarRating value={order.review_rating} />
+                          </p>
+                        ) : (
+                          <ReviewForm
+                            orderId={order.id}
+                            vendorName={order.business_name}
+                            onSubmitted={(rating) => markReviewed(order.id, rating)}
+                          />
+                        ))}
                     </div>
                   )}
                 </li>

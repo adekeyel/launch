@@ -1,28 +1,37 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getPublicSettings } from "../services/settings";
-import Loader from "../components/Loader";
+import ErrorState from "../components/ErrorState";
+import { Skeleton } from "../components/Skeleton";
+import { errorMessage } from "../lib/errors";
+import { useContent } from "../context/ContentContext";
 
-export default function StaticPage({ title, settingKey }) {
+// The text lives in Admin > Pages; the page's name and the "not written yet"
+// message live in Admin > Site content > Page names.
+export default function StaticPage({ pageKey }) {
+  const { content, t } = useContent();
+  const settingKey = `page_${pageKey}`;
+  const title = t(content.pages[`${pageKey}Title`]);
   const [body, setBody] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const settings = await getPublicSettings();
+      setBody(settings[settingKey] || "");
+    } catch (err) {
+      console.error(`Failed to load page content for ${settingKey}:`, err);
+      setError(errorMessage(err, "We couldn't load this page."));
+    } finally {
+      setLoading(false);
+    }
+  }, [settingKey]);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        const settings = await getPublicSettings();
-        if (!cancelled) setBody(settings[settingKey] || "");
-      } catch (err) {
-        console.error(`Failed to load page content for ${settingKey}:`, err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [settingKey]);
+    load();
+  }, [load]);
 
   const paragraphs = (body || "").split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
 
@@ -31,9 +40,16 @@ export default function StaticPage({ title, settingKey }) {
       <h1 className="font-display text-3xl font-bold text-ink">{title}</h1>
       <div className="mt-8">
         {loading ? (
-          <Loader label="Loading…" />
+          <div className="space-y-3" role="status" aria-busy="true">
+            <span className="sr-only">Loading…</span>
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-11/12" />
+            <Skeleton className="h-4 w-4/5" />
+          </div>
+        ) : error ? (
+          <ErrorState title="Couldn't load this page" message={error} onRetry={load} />
         ) : paragraphs.length === 0 ? (
-          <p className="text-sm text-ink/45">This page hasn't been written yet — check back soon.</p>
+          <p className="text-sm text-ink/45">{t(content.pages.emptyMessage)}</p>
         ) : (
           <div className="space-y-4 text-sm leading-relaxed text-ink/70">
             {paragraphs.map((p, i) => (

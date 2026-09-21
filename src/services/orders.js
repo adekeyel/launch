@@ -46,3 +46,8 @@ export const STATUS_LABEL = {
   delivered: "Delivered",
   cancelled: "Cancelled",
 };
+
+// One review per delivered order. Resolves with the saved review.
+export function reviewOrder(id, { rating, comment }) {
+  return api.post(`/orders/${id}/review`, { rating, comment });
+}

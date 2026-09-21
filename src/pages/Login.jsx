@@ -3,14 +3,20 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authErrorMessage } from "../services/auth";
 import ErrorBanner from "../components/ErrorBanner";
+import { useContent } from "../context/ContentContext";
 
 export default function Login() {
   const { login } = useAuth();
+  const { content, t } = useContent();
+  const copy = content.auth.login;
   const navigate = useNavigate();
   const location = useLocation();
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const from = location.state?.from;
+  const reason = location.state?.reason;
 
   const update = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -19,9 +25,8 @@ export default function Login() {
     setError("");
     setSubmitting(true);
     try {
-      const user = await login(form.email, form.password);
-      const from = location.state?.from;
-      if (from) navigate(from);
+      const user = await login(form.email.trim(), form.password);
+      if (from) navigate(from, { replace: true });
       else if (user.role === "vendor") navigate("/vendor/dashboard");
       else if (user.role === "admin") navigate("/admin");
       else navigate("/");
@@ -34,9 +39,15 @@ export default function Login() {
 
   return (
     <div className="mx-auto flex min-h-[75vh] max-w-md flex-col justify-center px-4 py-16 sm:px-6">
-      <p className="text-xs font-semibold uppercase tracking-wider text-marigold-dark">Welcome back</p>
-      <h1 className="mt-1 font-display text-3xl font-bold text-ink">Log in to LAUNCH TIME</h1>
-      <p className="mt-2 text-sm text-ink/55">Pick up where you left off — your cart and orders are waiting.</p>
+      {copy.eyebrow && <p className="text-xs font-semibold uppercase tracking-wider text-marigold-dark">{t(copy.eyebrow)}</p>}
+      <h1 className="mt-1 font-display text-3xl font-bold text-ink">{t(copy.title)}</h1>
+      {copy.subtitle && <p className="mt-2 text-sm text-ink/55">{t(copy.subtitle)}</p>}
+
+      {reason && (
+        <p className="mt-5 rounded-xl border border-marigold/30 bg-marigold-soft/50 px-4 py-3 text-sm text-ink/80">
+          {reason}
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">
         <ErrorBanner message={error} />
@@ -77,7 +88,7 @@ export default function Login() {
 
       <p className="mt-6 text-center text-sm text-ink/55">
         New here?{" "}
-        <Link to="/register" className="font-semibold text-ink hover:text-marigold-dark">
+        <Link to="/register" state={location.state} className="font-semibold text-ink hover:text-marigold-dark">
           Create an account
         </Link>
       </p>

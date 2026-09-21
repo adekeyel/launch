@@ -27,3 +27,7 @@ export function uploadMyBanner(file) {
   fd.set("media", file);
   return api.upload("/vendors/me/banner", fd, "PUT");
 }
+
+export function listVendorReviews(id, params = {}) {
+  return api.get(`/vendors/${id}/reviews`, params);
+}

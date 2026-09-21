@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authErrorMessage } from "../services/auth";
 import ErrorBanner from "../components/ErrorBanner";
+import { useContent } from "../context/ContentContext";
 
 const initialForm = {
   fullname: "",
@@ -17,6 +18,10 @@ const initialForm = {
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { content, t } = useContent();
+  const copy = content.auth.register;
+  const from = location.state?.from;
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -32,7 +37,7 @@ export default function Register() {
       if (user.role === "vendor") {
         navigate("/vendor/dashboard");
       } else {
-        navigate("/");
+        navigate(from || "/", { replace: Boolean(from) });
       }
     } catch (err) {
       setError(authErrorMessage(err));
@@ -43,8 +48,8 @@ export default function Register() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col px-4 py-16 sm:px-6">
-      <p className="text-xs font-semibold uppercase tracking-wider text-marigold-dark">Get started</p>
-      <h1 className="mt-1 font-display text-3xl font-bold text-ink">Create your account</h1>
+      {copy.eyebrow && <p className="text-xs font-semibold uppercase tracking-wider text-marigold-dark">{t(copy.eyebrow)}</p>}
+      <h1 className="mt-1 font-display text-3xl font-bold text-ink">{t(copy.title)}</h1>
 
       <div className="mt-6 grid grid-cols-2 gap-2 rounded-full border border-ink/15 bg-white p-1">
         {[
@@ -163,7 +168,7 @@ export default function Register() {
 
       <p className="mt-6 text-center text-sm text-ink/55">
         Already have an account?{" "}
-        <Link to="/login" className="font-semibold text-ink hover:text-marigold-dark">
+        <Link to="/login" state={location.state} className="font-semibold text-ink hover:text-marigold-dark">
           Log in
         </Link>
       </p>

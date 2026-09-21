@@ -1,4 +1,5 @@
 import { api, setAccessToken } from "./api";
+import { errorMessage } from "../lib/errors";
 
 export async function login(email, password) {
   const data = await api.post("/auth/login", { email, password });
@@ -33,7 +34,5 @@ export function resetPassword(token, password) {
 }
 
 export function authErrorMessage(err) {
-  if (err?.errors?.length) return err.errors.map((e) => e.message).join(" ");
-  if (err?.message) return err.message;
-  return "Something went wrong. Please try again.";
+  return errorMessage(err);
 }

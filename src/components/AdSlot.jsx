@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { getActiveAds, trackAdHit } from "../services/ads";
+import { optimizedImage } from "../lib/media";
 
 const SIZE = {
   top: "h-[50px]",
@@ -72,7 +73,7 @@ export default function AdSlot({ placement }) {
         {ad.media_type === "video" ? (
           <video src={ad.media_url} className="h-full w-full object-cover" autoPlay muted loop playsInline />
         ) : (
-          <img src={ad.media_url} alt={ad.title || ""} className="h-full w-full object-cover" />
+          <img src={optimizedImage(ad.media_url, 1600)} alt={ad.title || ""} className="h-full w-full object-cover" />
         )}
       </a>
       <span className="pointer-events-none absolute bottom-0.5 right-1.5 rounded bg-ink/60 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">

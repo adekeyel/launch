@@ -70,3 +70,14 @@
     @apply rounded-xl2 border border-line bg-card;
   }
 }
+
+@layer utilities {
+  /* Sideways-scrolling rows (category bar) without the ugly scrollbar */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

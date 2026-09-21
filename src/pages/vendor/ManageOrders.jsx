@@ -97,7 +97,12 @@ export default function ManageOrders() {
                       <p className="text-xs text-ink/45">{order.customer_phone}</p>
                       <p className="text-xs text-ink/45">{formatDate(order.created_at)}</p>
                     </div>
-                    <span className="font-mono text-lg font-bold text-ink">{formatMoney(order.total)}</span>
+                    <div className="text-right">
+                      <span className="font-mono text-lg font-bold text-ink">{formatMoney(order.total)}</span>
+                      {Number(order.delivery_fee) > 0 && (
+                        <p className="text-xs text-ink/45">includes {formatMoney(order.delivery_fee)} delivery</p>
+                      )}
+                    </div>
                   </div>
                   {order.delivery_address && (
                     <p className="mt-3 text-sm text-ink/55">Deliver to: {order.delivery_address}</p>

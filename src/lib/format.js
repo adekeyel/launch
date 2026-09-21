@@ -18,3 +18,9 @@ export function orderCode(id) {
   if (!id) return "LT-000000";
   return `LT-${id.replace(/-/g, "").slice(0, 6).toUpperCase()}`;
 }
+
+// "12 Sep 2026" — for things where the time of day doesn't matter (reviews).
+export function formatDay(value) {
+  if (!value) return "";
+  return new Date(value).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
+}

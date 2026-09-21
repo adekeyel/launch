@@ -3,10 +3,22 @@ import { getMyVendorProfile, updateMyVendorProfile, uploadMyLogo, uploadMyBanner
 import VendorTabs from "../../components/VendorTabs";
 import Loader from "../../components/Loader";
 import ErrorBanner from "../../components/ErrorBanner";
+import Toggle from "../../components/Toggle";
+import HoursEditor from "../../components/HoursEditor";
 import { IconUpload } from "../../components/icons";
+import { useToast } from "../../context/ToastContext";
+import { errorMessage } from "../../lib/errors";
+import { defaultHours, normalizeHours } from "../../lib/hours";
 
 export default function VendorProfile() {
+  const toast = useToast();
   const [vendor, setVendor] = useState(null);
+  const [hoursEnabled, setHoursEnabled] = useState(false);
+  const [hours, setHours] = useState(defaultHours());
+  const [delivery, setDelivery] = useState({ fee: "0", freeAbove: "" });
+  const [savingStatus, setSavingStatus] = useState(false);
+  const [savingHours, setSavingHours] = useState(false);
+  const [savingDelivery, setSavingDelivery] = useState(false);
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -28,6 +40,12 @@ export default function VendorProfile() {
         phone: v.phone || "",
         eta: v.eta || "",
         categories: (v.categories || []).join(", "),
+      });
+      setHoursEnabled(Boolean(v.opening_hours));
+      setHours(v.opening_hours ? normalizeHours(v.opening_hours) : defaultHours());
+      setDelivery({
+        fee: String(v.delivery_fee ?? 0),
+        freeAbove: v.free_delivery_above == null ? "" : String(v.free_delivery_above),
       });
     } catch (err) {
       console.error("Failed to load vendor profile:", err);
@@ -94,6 +112,44 @@ export default function VendorProfile() {
     } finally {
       setSavingDetails(false);
     }
+  };
+
+  // Saves a slice of the profile (status, hours, delivery) and confirms with a toast.
+  const saveSetting = async (patch, message, setBusy) => {
+    setError("");
+    setBusy(true);
+    try {
+      const updated = await updateMyVendorProfile(patch);
+      setVendor(updated);
+      toast.success(message);
+    } catch (err) {
+      console.error("Failed to save shop settings:", err);
+      setError(errorMessage(err, "Couldn't save that. Please try again."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const acceptingOrders = vendor ? !vendor.orders_paused : true;
+
+  const handleToggleOrders = (accepting) =>
+    saveSetting({ orders_paused: !accepting }, accepting ? "Orders resumed." : "Orders paused.", setSavingStatus);
+
+  const handleSaveHours = (e) => {
+    e.preventDefault();
+    saveSetting({ opening_hours: hoursEnabled ? hours : null }, "Opening hours saved.", setSavingHours);
+  };
+
+  const handleSaveDelivery = (e) => {
+    e.preventDefault();
+    saveSetting(
+      {
+        delivery_fee: delivery.fee === "" ? 0 : Number(delivery.fee),
+        free_delivery_above: delivery.freeAbove === "" ? null : Number(delivery.freeAbove),
+      },
+      "Delivery settings saved.",
+      setSavingDelivery
+    );
   };
 
   if (loading) return <Loader label="Loading your shop profile…" />;
@@ -176,6 +232,23 @@ export default function VendorProfile() {
         </div>
       </section>
 
+      {/* Store status: the instant pause switch */}
+      <section className="card mt-6 p-5">
+        <Toggle
+          label="Accepting orders"
+          description={
+            acceptingOrders
+              ? vendor.open_now
+                ? vendor.open_label || "Customers can order from you now."
+                : `Closed right now. ${vendor.open_label || ""}`
+              : "Paused. Customers can browse your menu but can't order."
+          }
+          checked={acceptingOrders}
+          disabled={savingStatus}
+          onChange={handleToggleOrders}
+        />
+      </section>
+
       {/* Shop details */}
       <form onSubmit={handleSaveDetails} className="card mt-6 space-y-4 p-5">
         <h2 className="font-display text-base font-bold text-ink">Shop details</h2>
@@ -216,6 +289,66 @@ export default function VendorProfile() {
         </div>
         <button type="submit" disabled={savingDetails} className="btn-primary">
           {savingDetails ? "Saving…" : savedDetails ? "Saved ✓" : "Save changes"}
+        </button>
+      </form>
+
+      {/* Opening hours */}
+      <form onSubmit={handleSaveHours} className="card mt-6 space-y-4 p-5">
+        <h2 className="font-display text-base font-bold text-ink">Opening hours</h2>
+        <Toggle
+          label="Set opening hours"
+          description="Off means you're open whenever “Accepting orders” is on. Times are Lagos time."
+          checked={hoursEnabled}
+          onChange={setHoursEnabled}
+        />
+        {hoursEnabled && <HoursEditor hours={hours} onChange={setHours} />}
+        <button type="submit" disabled={savingHours} className="btn-primary">
+          {savingHours ? "Saving…" : "Save opening hours"}
+        </button>
+      </form>
+
+      {/* Delivery */}
+      <form onSubmit={handleSaveDelivery} className="card mt-6 space-y-4 p-5">
+        <h2 className="font-display text-base font-bold text-ink">Delivery fee</h2>
+        <p className="text-sm text-ink/55">
+          Customers pay this on top of their food. You keep it (the 5% commission applies to food only). Leave it at 0
+          for free delivery.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="field-label" htmlFor="delivery-fee">
+              Delivery fee (₦)
+            </label>
+            <input
+              id="delivery-fee"
+              type="number"
+              min="0"
+              step="50"
+              inputMode="decimal"
+              value={delivery.fee}
+              onChange={(e) => setDelivery((d) => ({ ...d, fee: e.target.value }))}
+              className="field-input"
+            />
+          </div>
+          <div>
+            <label className="field-label" htmlFor="free-above">
+              Free delivery on orders over (₦, optional)
+            </label>
+            <input
+              id="free-above"
+              type="number"
+              min="0"
+              step="100"
+              inputMode="decimal"
+              value={delivery.freeAbove}
+              onChange={(e) => setDelivery((d) => ({ ...d, freeAbove: e.target.value }))}
+              className="field-input"
+              placeholder="e.g. 5000"
+            />
+          </div>
+        </div>
+        <button type="submit" disabled={savingDelivery} className="btn-primary">
+          {savingDelivery ? "Saving…" : "Save delivery settings"}
         </button>
       </form>
     </div>

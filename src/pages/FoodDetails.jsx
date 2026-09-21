@@ -1,65 +1,71 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
 import { getFood } from "../services/foods";
-import Loader from "../components/Loader";
 import EmptyState from "../components/EmptyState";
+import ErrorState from "../components/ErrorState";
 import QuantityStepper from "../components/QuantityStepper";
+import { FoodDetailsSkeleton } from "../components/Skeleton";
 import { useAuth } from "../context/AuthContext";
-import { useCart } from "../context/CartContext";
+import { useAddToCart } from "../hooks/useAddToCart";
+import { usePageTitle } from "../hooks/usePageTitle";
+import { errorMessage, isNotFound } from "../lib/errors";
 import { formatMoney } from "../lib/format";
+import { optimizedImage } from "../lib/media";
 
 export default function FoodDetails() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const { add } = useCart();
+  const { addToCart, addingId } = useAddToCart();
   const [food, setFood] = useState(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [error, setError] = useState("");
   const [qty, setQty] = useState(1);
-  const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setNotFound(false);
-      setAdded(false);
-      try {
-        const data = await getFood(id);
-        if (!cancelled) setFood(data);
-      } catch (err) {
-        console.error("Failed to load food item:", err);
-        if (!cancelled) setNotFound(true);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  usePageTitle(food?.name, food?.description ? food.description.slice(0, 155) : undefined);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setNotFound(false);
+    setError("");
+    setAdded(false);
+    try {
+      setFood(await getFood(id));
+    } catch (err) {
+      console.error("Failed to load food item:", err);
+      if (isNotFound(err)) setNotFound(true);
+      else setError(errorMessage(err, "We couldn't load this dish."));
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
 
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const adding = addingId === food?.id;
+
   const handleAdd = async () => {
-    if (!user) return navigate("/login");
-    setAdding(true);
-    try {
-      await add(food.id, qty);
-      setAdded(true);
-    } catch (err) {
-      console.error("Failed to add to cart:", err);
-    } finally {
-      setAdding(false);
-    }
+    const ok = await addToCart(food, qty);
+    if (ok) setAdded(true);
   };
 
-  if (loading) return <Loader label="Loading dish…" />;
+  if (loading) return <FoodDetailsSkeleton />;
 
-  if (notFound || !food) {
+  if (notFound) {
     return (
       <div className="mx-auto max-w-md px-4 py-24">
         <EmptyState title="Dish not found" hint="It may have been removed or is no longer available." />
+      </div>
+    );
+  }
+
+  if (error || !food) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-24">
+        <ErrorState title="Couldn't load this dish" message={error} onRetry={load} />
       </div>
     );
   }
@@ -72,7 +78,7 @@ export default function FoodDetails() {
             food.media_type === "video" ? (
               <video src={food.image} className="h-full w-full object-cover" controls />
             ) : (
-              <img src={food.image} alt={food.name} className="h-full w-full object-cover" />
+              <img src={optimizedImage(food.image, 1000)} alt={food.name} className="h-full w-full object-cover" />
             )
           ) : (
             <div className="flex h-full w-full items-center justify-center font-display text-6xl font-extrabold text-ink/15">
@@ -100,6 +106,11 @@ export default function FoodDetails() {
           {!food.is_available ? (
             <p className="mt-6 rounded-xl bg-ink/5 px-4 py-3 text-sm text-ink/55">
               This item isn't available right now.
+            </p>
+          ) : food.vendor_is_open === false ? (
+            <p role="status" className="mt-6 rounded-xl bg-ink/5 px-4 py-3 text-sm text-ink/60">
+              {food.business_name || "This kitchen"} is closed right now
+              {food.vendor_open_label ? `. ${food.vendor_open_label}` : ""}. You can order when they open.
             </p>
           ) : (
             <div className="mt-6 flex items-center gap-4">

@@ -48,4 +48,19 @@ export function deleteAd(id) {
   return api.del(`/admin/ads/${id}`);
 }
 
-export const PLACEMENTS = ["top", "middle", "bottom"];
+export const PLACEMENTS = ["hero", "tile", "top", "middle", "bottom"];
+
+// What each slot is, and what to upload for it.
+export const PLACEMENT_INFO = {
+  hero: {
+    label: "Homepage hero (rotating banner)",
+    hint: "The big banner on the home page. Best at about 1200×600 (2:1). Accepts an image, an animated GIF or a short video (up to 30 seconds). Several hero ads take turns automatically.",
+  },
+  tile: {
+    label: "Homepage tile (small square)",
+    hint: "The small squares beside the hero. Use a still picture, about 600×600. Up to 4 tiles show; videos are ignored here.",
+  },
+  top: { label: "Top strip", hint: "A thin banner above the header on browse pages." },
+  middle: { label: "Middle strip", hint: "A thin banner near the bottom of browse pages." },
+  bottom: { label: "Bottom strip", hint: "A thin banner just above the footer on browse pages." },
+};

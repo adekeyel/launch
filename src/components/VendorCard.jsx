@@ -1,6 +1,10 @@
 import { Link } from "react-router-dom";
 import { IconClock, IconPin } from "./icons";
 import TierBadge from "./TierBadge";
+import OpenBadge from "./OpenBadge";
+import { RatingSummary } from "./StarRating";
+import { optimizedImage } from "../lib/media";
+import { deliveryLabel } from "../lib/delivery";
 
 export default function VendorCard({ vendor }) {
   return (
@@ -10,7 +14,13 @@ export default function VendorCard({ vendor }) {
     >
       <div className="relative h-36 w-full overflow-hidden bg-ink/5">
         {vendor.banner_url ? (
-          <img src={vendor.banner_url} alt="" className="h-full w-full object-cover" />
+          <img
+            src={optimizedImage(vendor.banner_url, 800)}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover"
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-marigold-soft to-basil-soft font-display text-3xl font-extrabold text-ink/20">
             {vendor.business_name?.[0] ?? "?"}
@@ -18,12 +28,15 @@ export default function VendorCard({ vendor }) {
         )}
         {vendor.logo_url && (
           <img
-            src={vendor.logo_url}
+            src={optimizedImage(vendor.logo_url, 120)}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="absolute -bottom-4 left-4 h-12 w-12 rounded-full border-2 border-white object-cover shadow"
           />
         )}
         <TierBadge tier={vendor.tier} className="absolute right-3 top-3" />
+        <OpenBadge status={vendor.open_status} label={vendor.open_label} overImage className="absolute left-3 top-3" />
       </div>
       <div className="px-4 pb-4 pt-6">
         <h3 className="font-display text-base font-bold text-ink group-hover:text-marigold-dark">
@@ -41,6 +54,10 @@ export default function VendorCard({ vendor }) {
               <IconPin className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{vendor.address}</span>
             </span>
           )}
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/50">
+          <RatingSummary avg={vendor.rating_avg} count={vendor.rating_count} />
+          <span>{deliveryLabel(vendor, { short: true })}</span>
         </div>
         {vendor.categories?.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">

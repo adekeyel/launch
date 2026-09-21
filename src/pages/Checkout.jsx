@@ -17,7 +17,7 @@ const PAYMENT_METHODS = [
 ];
 
 export default function Checkout() {
-  const { items, total, refresh } = useCart();
+  const { items, subtotal, deliveryTotal, grandTotal, vendors, hasClosedVendor, refresh } = useCart();
   const navigate = useNavigate();
   const [form, setForm] = useState({ deliveryAddress: "", phone: "", notes: "", paymentMethod: "transfer" });
   const [receiptFile, setReceiptFile] = useState(null);
@@ -37,6 +37,10 @@ export default function Checkout() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (hasClosedVendor) {
+      setError("A kitchen in your cart is closed right now. Go back to your cart to remove it.");
+      return;
+    }
     if (isTransfer && !receiptFile) {
       setError("Upload your payment receipt or screenshot to place the order.");
       return;
@@ -82,6 +86,15 @@ export default function Checkout() {
       <form onSubmit={handleSubmit} className="space-y-4 sm:col-span-3">
         <h1 className="font-display text-3xl font-bold text-ink">Checkout</h1>
         <ErrorBanner message={error} />
+        {hasClosedVendor && (
+          <div className="rounded-xl border border-chili/25 bg-chili-soft px-4 py-3 text-sm text-chili">
+            A kitchen in your cart is closed right now.{" "}
+            <Link to="/cart" className="font-semibold underline">
+              Back to your cart
+            </Link>{" "}
+            to remove it.
+          </div>
+        )}
 
         <div>
           <label className="field-label" htmlFor="deliveryAddress">
@@ -172,7 +185,7 @@ export default function Checkout() {
                 <p className="mt-1 text-sm text-ink/55">Account details haven't been set up yet — check back shortly.</p>
               )}
               <p className="mt-3 text-xs text-ink/55">
-                Pay {formatMoney(total)} into this account, then upload your receipt below. We verify payment
+                Pay {formatMoney(grandTotal)} into this account, then upload your receipt below. We verify payment
                 before the vendor is notified to start preparing your order.
               </p>
             </div>
@@ -199,13 +212,17 @@ export default function Checkout() {
           </>
         ) : (
           <div className="rounded-xl border border-marigold/30 bg-marigold-soft/50 p-4 text-sm text-ink/70">
-            You'll be taken to Flutterwave's secure checkout to pay {formatMoney(total)} by card. Payment is
+            You'll be taken to Flutterwave's secure checkout to pay {formatMoney(grandTotal)} by card. Payment is
             verified automatically — no receipt needed.
           </div>
         )}
 
-        <button type="submit" disabled={submitting} className="btn-primary w-full">
-          {submitting ? "Placing order…" : isTransfer ? `Place order — ${formatMoney(total)}` : `Pay ${formatMoney(total)} by card`}
+        <button type="submit" disabled={submitting || hasClosedVendor} className="btn-primary w-full">
+          {submitting
+            ? "Placing order…"
+            : isTransfer
+              ? `Place order — ${formatMoney(grandTotal)}`
+              : `Pay ${formatMoney(grandTotal)} by card`}
         </button>
       </form>
 
@@ -222,9 +239,28 @@ export default function Checkout() {
               </li>
             ))}
           </ul>
-          <div className="mt-4 flex items-center justify-between border-t border-dashed border-line pt-4">
+          <dl className="mt-4 space-y-1.5 border-t border-dashed border-line pt-4 text-sm text-ink/60">
+            <div className="flex justify-between">
+              <dt>Food</dt>
+              <dd className="font-mono">{formatMoney(subtotal)}</dd>
+            </div>
+            {vendors.length > 1 ? (
+              vendors.map((v) => (
+                <div key={v.vendor_id} className="flex justify-between">
+                  <dt className="truncate pr-3">Delivery, {v.business_name}</dt>
+                  <dd className="font-mono">{v.delivery_fee > 0 ? formatMoney(v.delivery_fee) : "Free"}</dd>
+                </div>
+              ))
+            ) : (
+              <div className="flex justify-between">
+                <dt>Delivery</dt>
+                <dd className="font-mono">{deliveryTotal > 0 ? formatMoney(deliveryTotal) : "Free"}</dd>
+              </div>
+            )}
+          </dl>
+          <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
             <span className="text-sm font-semibold text-ink">Total</span>
-            <span className="font-mono text-lg font-bold text-ink">{formatMoney(total)}</span>
+            <span className="font-mono text-lg font-bold text-ink">{formatMoney(grandTotal)}</span>
           </div>
           <p className="mt-3 text-xs text-ink/40">
             Items from different vendors are split into separate orders automatically.

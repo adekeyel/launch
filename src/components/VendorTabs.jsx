@@ -5,6 +5,7 @@ const TABS = [
   { to: "/vendor/profile", label: "Shop profile" },
   { to: "/vendor/foods", label: "Manage foods" },
   { to: "/vendor/orders", label: "Manage orders" },
+  { to: "/vendor/reviews", label: "Reviews" },
   { to: "/vendor/grow", label: "Grow" },
   { to: "/vendor/payouts", label: "Payouts" },
 ];

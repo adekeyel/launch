@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getMyVendorProfile } from "../../services/vendors";
+import { getMyVendorProfile, updateMyVendorProfile } from "../../services/vendors";
 import { listMyFoods } from "../../services/foods";
 import { listOrders } from "../../services/orders";
 import { getPublicSettings } from "../../services/settings";
@@ -8,6 +8,10 @@ import VendorTabs from "../../components/VendorTabs";
 import TierBadge from "../../components/TierBadge";
 import Loader from "../../components/Loader";
 import { formatMoney } from "../../lib/format";
+import OpenBadge from "../../components/OpenBadge";
+import { RatingSummary } from "../../components/StarRating";
+import { useToast } from "../../context/ToastContext";
+import { errorMessage } from "../../lib/errors";
 
 const STATUS_COPY = {
   pending: {
@@ -34,6 +38,23 @@ export default function VendorDashboard() {
   const [orders, setOrders] = useState([]);
   const [settings, setSettings] = useState({});
   const [loading, setLoading] = useState(true);
+  const [togglingOrders, setTogglingOrders] = useState(false);
+  const toast = useToast();
+
+  // One-tap pause / resume, straight from the dashboard.
+  const toggleOrders = async () => {
+    setTogglingOrders(true);
+    try {
+      const updated = await updateMyVendorProfile({ orders_paused: !vendor.orders_paused });
+      setVendor(updated);
+      toast.success(updated.orders_paused ? "Orders paused." : "Orders resumed.");
+    } catch (err) {
+      console.error("Failed to update order status:", err);
+      toast.error(errorMessage(err, "Couldn't update that. Please try again."));
+    } finally {
+      setTogglingOrders(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -104,6 +125,27 @@ export default function VendorDashboard() {
         </div>
       )}
 
+      {vendor.status === "approved" && (
+        <div className="card mt-6 flex flex-wrap items-center justify-between gap-3 p-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="font-display text-base font-bold text-ink">
+                {vendor.orders_paused ? "Orders paused" : vendor.open_now ? "Taking orders" : "Closed right now"}
+              </p>
+              <OpenBadge status={vendor.open_status} label={vendor.open_label} />
+            </div>
+            <p className="mt-0.5 text-sm text-ink/55">
+              {vendor.orders_paused
+                ? "Customers can browse your menu but can't order."
+                : vendor.open_label || "Customers can order from you."}
+            </p>
+          </div>
+          <button type="button" onClick={toggleOrders} disabled={togglingOrders} className="btn-outline">
+            {togglingOrders ? "Saving…" : vendor.orders_paused ? "Resume orders" : "Pause orders"}
+          </button>
+        </div>
+      )}
+
       <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label="Menu items" value={foods.length} />
         <StatCard label="Live orders" value={pendingOrders.length} />
@@ -140,6 +182,19 @@ export default function VendorDashboard() {
           </p>
           <Link to="/vendor/orders" className="btn-outline mt-4 w-full">
             Manage orders
+          </Link>
+        </div>
+        <div className="card p-5">
+          <h2 className="font-display text-lg font-bold text-ink">Reviews</h2>
+          <p className="mt-1 text-sm text-ink/55">
+            {vendor.rating_count > 0 ? (
+              <RatingSummary avg={vendor.rating_avg} count={vendor.rating_count} />
+            ) : (
+              "No reviews yet. Customers can rate delivered orders."
+            )}
+          </p>
+          <Link to="/vendor/reviews" className="btn-outline mt-4 w-full">
+            See reviews
           </Link>
         </div>
         <div className="card p-5">

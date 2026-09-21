@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listAllAds, createAd, updateAd, deleteAd, PLACEMENTS } from "../../services/ads";
+import { listAllAds, createAd, updateAd, deleteAd, PLACEMENTS, PLACEMENT_INFO } from "../../services/ads";
 import AdminTabs from "../../components/AdminTabs";
 import Loader from "../../components/Loader";
 import ErrorBanner from "../../components/ErrorBanner";
@@ -7,7 +7,7 @@ import EmptyState from "../../components/EmptyState";
 import { IconTrash, IconUpload } from "../../components/icons";
 import { formatDate } from "../../lib/format";
 
-const EMPTY_FORM = { title: "", linkUrl: "", placement: "top", page: "all" };
+const EMPTY_FORM = { title: "", linkUrl: "", placement: "hero", page: "all" };
 
 export default function AdminAds() {
   const [ads, setAds] = useState([]);
@@ -120,10 +120,11 @@ export default function AdminAds() {
             <select value={form.placement} onChange={update("placement")} className="field-input">
               {PLACEMENTS.map((p) => (
                 <option key={p} value={p}>
-                  {p}
+                  {PLACEMENT_INFO[p].label}
                 </option>
               ))}
             </select>
+            <p className="mt-1.5 text-xs text-ink/50">{PLACEMENT_INFO[form.placement]?.hint}</p>
           </div>
           <div>
             <label className="field-label">Page (path, or "all")</label>
