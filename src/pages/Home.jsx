@@ -68,12 +68,17 @@ export default function Home() {
       {/* Hero: rotating banner (images, GIFs, video) beside four static promo tiles */}
       <section className="mx-auto max-w-6xl px-4 pt-4 sm:px-6 sm:pt-6" aria-label="Featured">
         <div className="grid gap-3 lg:grid-cols-3 lg:items-stretch lg:gap-4">
-          <div className="aspect-[16/9] sm:aspect-[2/1] lg:col-span-2 lg:aspect-auto lg:min-h-[300px]">
-            {!heroReady ? (
-              <HeroSkeleton />
-            ) : (
-              <HeroCarousel slides={heroSlides} autoplay={hero.autoplay} intervalMs={hero.intervalSeconds * 1000} />
-            )}
+          {/* The banner is absolutely positioned inside this box so its pictures can never
+              stretch it: on phones/tablets the box is a fixed 16:9 / 2:1 shape, and on large
+              screens its height simply matches the promo tiles beside it. */}
+          <div className="relative aspect-[16/9] sm:aspect-[2/1] lg:col-span-2 lg:aspect-auto lg:min-h-[300px]">
+            <div className="absolute inset-0">
+              {!heroReady ? (
+                <HeroSkeleton />
+              ) : (
+                <HeroCarousel slides={heroSlides} autoplay={hero.autoplay} intervalMs={hero.intervalSeconds * 1000} />
+              )}
+            </div>
           </div>
           {!heroReady ? (
             <div className="grid grid-cols-2 gap-3 lg:gap-4" aria-hidden="true">

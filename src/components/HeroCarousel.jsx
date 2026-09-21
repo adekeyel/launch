@@ -121,7 +121,7 @@ export default function HeroCarousel({ slides, intervalMs = 6000, autoplay = tru
               aria-roledescription="slide"
               aria-label={`${i + 1} of ${count}`}
               aria-hidden={!active}
-              className="relative h-full min-w-full shrink-0"
+              className="relative h-full min-w-full shrink-0 overflow-hidden"
             >
               {slide.ad ? (
                 <AdSlide ad={slide.ad} tabIndex={tabIndex} eager={i === 0} videoRefs={videoRefs} slideKey={slide.key} />
@@ -176,26 +176,40 @@ export default function HeroCarousel({ slides, intervalMs = 6000, autoplay = tru
 
 // An advertiser's slide: a still image, an animated GIF, or a looping video.
 function AdSlide({ ad, tabIndex, eager, videoRefs, slideKey }) {
+  // Nothing is ever cropped: the whole picture/video is fitted inside the banner
+  // (object-contain), whatever its shape or size. Any leftover space is filled with
+  // a soft blurred copy of the same picture so it never looks like empty bars.
   const media =
     ad.media_type === "video" ? (
-      <video
-        ref={(el) => {
-          videoRefs.current[slideKey] = el;
-        }}
-        src={ad.media_url}
-        className="h-full w-full object-cover"
-        muted
-        loop
-        playsInline
-        preload="metadata"
-      />
+      <div className="h-full w-full bg-ink">
+        <video
+          ref={(el) => {
+            videoRefs.current[slideKey] = el;
+          }}
+          src={ad.media_url}
+          className="h-full w-full object-contain"
+          muted
+          loop
+          playsInline
+          preload="metadata"
+        />
+      </div>
     ) : (
-      <img
-        src={optimizedImage(ad.media_url, 1400)}
-        alt={ad.title || ""}
-        loading={eager ? "eager" : "lazy"}
-        className="h-full w-full object-cover"
-      />
+      <div className="relative h-full w-full overflow-hidden bg-ink/10">
+        <img
+          src={optimizedImage(ad.media_url, 200)}
+          alt=""
+          aria-hidden="true"
+          loading={eager ? "eager" : "lazy"}
+          className="absolute inset-0 h-full w-full scale-125 object-cover opacity-70 blur-2xl"
+        />
+        <img
+          src={optimizedImage(ad.media_url, 1400)}
+          alt={ad.title || ""}
+          loading={eager ? "eager" : "lazy"}
+          className="relative h-full w-full object-contain"
+        />
+      </div>
     );
 
   const sponsored = (

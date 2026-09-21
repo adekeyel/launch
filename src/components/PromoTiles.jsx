@@ -35,11 +35,19 @@ export default function PromoTiles({ ads = [], tiles = [], max = 4 }) {
       {adTiles.map((ad) => {
         const inner = (
           <>
+            {/* Fitted whole (never cropped); leftover space is a soft blurred copy of the picture. */}
+            <img
+              src={optimizedImage(ad.media_url, 120)}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              className="absolute inset-0 h-full w-full scale-125 object-cover opacity-70 blur-xl"
+            />
             <img
               src={optimizedImage(ad.media_url, 500)}
               alt={ad.title || ""}
               loading="lazy"
-              className="h-full w-full object-cover transition group-hover:scale-105"
+              className="relative h-full w-full object-contain transition group-hover:scale-105"
             />
             <span className="pointer-events-none absolute right-2 top-2 rounded bg-ink/60 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">
               Sponsored

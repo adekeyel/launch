@@ -1,7 +1,7 @@
 # Vendor OffPay + visibility fix
 
 Backend (deploy first): controllers/adminController.js, controllers/vendorController.js, models/foodModel.js
-Frontend: src/pages/Register.jsx, src/pages/vendor/VendorDashboard.jsx, src/pages/admin/AdminDashboard.jsx
+Frontend: src/pages/Register.jsx, src/pages/vendor/VendorDashboard.jsx, src/pages/admin/AdminDashboard.jsx, src/pages/Home.jsx, src/components/HeroCarousel.jsx
 
 ## Fix the vendor you already created (one-off)
 Admin > Vendors > set the vendor to Tier 1 (with the new backend this also publishes their drafts).
