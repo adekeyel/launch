@@ -12,7 +12,7 @@ const GROUPS = [
   },
   {
     label: "OffPay",
-    keys: ["offpay_registration_url"],
+    keys: ["offpay_registration_url", "offpay_payment_note"],
     forcePublic: true,
   },
   {

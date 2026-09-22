@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { listAllCampaigns, activateCampaign, rejectCampaign } from "../../services/admin";
 import AdminTabs from "../../components/AdminTabs";
 import Loader from "../../components/Loader";
@@ -67,7 +68,16 @@ export default function AdminCampaigns() {
         <AdminTabs />
       </div>
 
-      <div className="mt-6 flex gap-2 overflow-x-auto">
+      <p className="mt-6 max-w-2xl text-sm text-ink/55">
+        Check each request's OffPay payment reference against your OffPay account, then activate. Prices per
+        duration are editable under{" "}
+        <Link to="/admin/settings" className="font-semibold text-marigold-dark hover:underline">
+          Admin &rarr; Settings &rarr; Advertising campaign pricing
+        </Link>
+        .
+      </p>
+
+      <div className="mt-4 flex gap-2 overflow-x-auto">
         {FILTERS.map((f) => (
           <button
             key={f}

@@ -168,3 +168,21 @@ export function IconHelp(props) {
     </svg>
   );
 }
+
+export function IconMegaphone(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M3 11v2a2 2 0 0 0 2 2h1l2.5 5.5a1 1 0 0 0 1.8-.9L9 15h1l9 4V5l-9 4H3a2 2 0 0 0 0 2Z" />
+      <path d="M18 8.5a3.5 3.5 0 0 1 0 7" />
+    </svg>
+  );
+}
+
+export function IconSparkle(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" />
+      <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}

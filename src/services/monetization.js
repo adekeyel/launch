@@ -19,14 +19,47 @@ export function listMyBilling() {
 
 // ---- Advertising campaigns ----
 export const CAMPAIGN_TYPES = [
-  { value: "homepage", label: "Homepage featured banner" },
-  { value: "sponsored_search", label: "Sponsored search results" },
-  { value: "category", label: "Category promotion" },
-  { value: "spotlight", label: "Recommended for you spotlight" },
-  { value: "limited_offer", label: "Limited-time promotion" },
-  { value: "festival", label: "Seasonal / festival campaign" },
+  {
+    value: "homepage",
+    label: "Homepage featured banner",
+    icon: "megaphone",
+    description: "Your banner rotates in the homepage spotlight — the first thing every visitor sees.",
+  },
+  {
+    value: "sponsored_search",
+    label: "Sponsored search results",
+    icon: "search",
+    description: "Appear at the top when customers search for meals, kitchens or cuisines.",
+  },
+  {
+    value: "category",
+    label: "Category promotion",
+    icon: "menu",
+    description: "Get featured at the top of a food category, like Rice dishes or Drinks.",
+  },
+  {
+    value: "spotlight",
+    label: "Recommended for you spotlight",
+    icon: "star",
+    description: "Show up in the personalised picks customers see based on what they usually order.",
+  },
+  {
+    value: "limited_offer",
+    label: "Limited-time promotion",
+    icon: "clock",
+    description: "Flag a short-term deal or new menu item with an urgency badge.",
+  },
+  {
+    value: "festival",
+    label: "Seasonal / festival campaign",
+    icon: "sparkle",
+    description: "Ride seasonal demand — Christmas, Eid, back-to-school and other high-traffic moments.",
+  },
 ];
 export const CAMPAIGN_DURATIONS = [1, 3, 7, 30];
+
+// A short human-readable label used in receipts, lists and confirmations.
+export const campaignTypeLabel = (value) => CAMPAIGN_TYPES.find((t) => t.value === value)?.label || value;
 
 export function createCampaign(campaignType, durationDays, paymentRef) {
   return api.post("/vendors/me/campaigns", { campaignType, durationDays, paymentRef });
