@@ -21,8 +21,28 @@ const GROUPS = [
     forcePublic: true,
   },
   {
-    label: "Advertising campaign pricing (₦)",
-    keys: ["campaign_price_1day", "campaign_price_3day", "campaign_price_7day", "campaign_price_30day"],
+    label: "Homepage banner pricing (₦)",
+    keys: ["campaign_price_hero_1day", "campaign_price_hero_3day", "campaign_price_hero_7day", "campaign_price_hero_30day"],
+    forcePublic: true,
+  },
+  {
+    label: "Homepage tile pricing (₦)",
+    keys: ["campaign_price_tile_1day", "campaign_price_tile_3day", "campaign_price_tile_7day", "campaign_price_tile_30day"],
+    forcePublic: true,
+  },
+  {
+    label: "Top strip pricing (₦)",
+    keys: ["campaign_price_top_1day", "campaign_price_top_3day", "campaign_price_top_7day", "campaign_price_top_30day"],
+    forcePublic: true,
+  },
+  {
+    label: "Middle strip pricing (₦)",
+    keys: ["campaign_price_middle_1day", "campaign_price_middle_3day", "campaign_price_middle_7day", "campaign_price_middle_30day"],
+    forcePublic: true,
+  },
+  {
+    label: "Bottom strip pricing (₦)",
+    keys: ["campaign_price_bottom_1day", "campaign_price_bottom_3day", "campaign_price_bottom_7day", "campaign_price_bottom_30day"],
     forcePublic: true,
   },
   {

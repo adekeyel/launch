@@ -8,6 +8,7 @@ import EmptyState from "../../components/EmptyState";
 import { formatMoney, formatDate } from "../../lib/format";
 
 const FILTERS = ["all", "pending_payment", "active", "expired"];
+const PLACEMENT_LABELS = { hero: "Homepage banner", tile: "Homepage tile", top: "Top strip", middle: "Middle strip", bottom: "Bottom strip" };
 
 export default function AdminCampaigns() {
   const [campaigns, setCampaigns] = useState([]);
@@ -104,14 +105,29 @@ export default function AdminCampaigns() {
           <ul className="divide-y divide-line">
             {campaigns.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
-                <div>
-                  <p className="font-semibold text-ink">
-                    {c.business_name} · <span className="capitalize">{c.campaign_type.replace("_", " ")}</span>
-                  </p>
-                  <p className="text-xs text-ink/45">
-                    {c.duration_days} days · {formatMoney(c.price)} · {formatDate(c.created_at)}
-                    {c.payment_ref && ` · ref: ${c.payment_ref}`}
-                  </p>
+                <div className="flex items-center gap-3">
+                  {c.media_url ? (
+                    c.media_type === "video" ? (
+                      <a href={c.media_url} target="_blank" rel="noopener noreferrer" className="grid h-14 w-20 shrink-0 place-items-center rounded-lg bg-ink/5 text-[10px] text-ink/50">
+                        View video
+                      </a>
+                    ) : (
+                      <a href={c.media_url} target="_blank" rel="noopener noreferrer">
+                        <img src={c.media_url} alt="Submitted banner" className="h-14 w-20 shrink-0 rounded-lg border border-ink/10 object-cover" />
+                      </a>
+                    )
+                  ) : (
+                    <span className="grid h-14 w-20 shrink-0 place-items-center rounded-lg bg-ink/5 text-[10px] text-ink/40">No banner</span>
+                  )}
+                  <div>
+                    <p className="font-semibold text-ink">
+                      {c.business_name} · {PLACEMENT_LABELS[c.campaign_type] || c.campaign_type}
+                    </p>
+                    <p className="text-xs text-ink/45">
+                      {c.duration_days} days · {formatMoney(c.price)} · {formatDate(c.created_at)}
+                      {c.payment_ref && ` · ref: ${c.payment_ref}`}
+                    </p>
+                  </div>
                 </div>
                 {c.status === "pending_payment" ? (
                   <div className="flex gap-2">

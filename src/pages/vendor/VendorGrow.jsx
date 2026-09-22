@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getPublicSettings } from "../../services/settings";
 import { getMyVendorProfile } from "../../services/vendors";
 import * as monetization from "../../services/monetization";
@@ -38,19 +38,23 @@ export default function VendorGrow() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [adSpaces, setAdSpaces] = useState(null);
+
   const load = async () => {
     setLoading(true);
     try {
-      const [s, v, subs, camps] = await Promise.all([
+      const [s, v, subs, camps, spaces] = await Promise.all([
         getPublicSettings(),
         getMyVendorProfile(),
         monetization.listMySubscriptions(),
         monetization.listMyCampaigns(),
+        monetization.getAdSpaces(),
       ]);
       setSettings(s);
       setVendor(v);
       setSubscriptions(subs.subscriptions);
       setCampaigns(camps.campaigns);
+      setAdSpaces(spaces);
     } catch (err) {
       console.error("Failed to load Grow page:", err);
       setError("Couldn't load this page.");
@@ -157,28 +161,41 @@ export default function VendorGrow() {
             </div>
 
             <div className="p-6">
-              <CampaignForm
-                settings={settings}
-                onCreate={async (type, days, paymentRef) => {
-                  await monetization.createCampaign(type, days, paymentRef);
-                  await load();
-                }}
-              />
+              {adSpaces ? (
+                <CampaignForm
+                  adSpaces={adSpaces}
+                  onCreate={async (payload) => {
+                    await monetization.createCampaign(payload);
+                    await load();
+                  }}
+                />
+              ) : (
+                <p className="text-sm text-ink/50">Ad space pricing isn't available right now.</p>
+              )}
 
               {campaigns.length > 0 && (
                 <div className="mt-8 border-t border-line pt-6">
                   <h3 className="text-xs font-semibold uppercase tracking-wide text-ink/45">Your campaigns</h3>
                   <ul className="mt-3 divide-y divide-line">
                     {campaigns.map((c) => {
-                      const Icon = TYPE_ICONS[monetization.CAMPAIGN_TYPES.find((t) => t.value === c.campaign_type)?.icon] || IconMegaphone;
+                      const space = adSpaces?.spaces.find((s) => s.key === c.campaign_type);
+                      const Icon = TYPE_ICONS[monetization.PLACEMENT_ICONS[c.campaign_type]] || IconMegaphone;
                       return (
                         <li key={c.id} className="flex items-center justify-between gap-3 py-3.5 text-sm">
                           <div className="flex items-center gap-3">
-                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink/5 text-ink/60">
-                              <Icon className="h-4.5 w-4.5" />
-                            </span>
+                            {c.media_type === "video" ? (
+                              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-ink/5 text-[9px] text-ink/50">
+                                Video
+                              </span>
+                            ) : c.media_url ? (
+                              <img src={c.media_url} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
+                            ) : (
+                              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-ink/5 text-ink/60">
+                                <Icon className="h-4.5 w-4.5" />
+                              </span>
+                            )}
                             <div>
-                              <p className="font-medium text-ink">{monetization.campaignTypeLabel(c.campaign_type)}</p>
+                              <p className="font-medium text-ink">{space?.label || c.campaign_type}</p>
                               <p className="text-xs text-ink/45">
                                 {c.duration_days} day{c.duration_days > 1 ? "s" : ""} · {formatMoney(c.price)}
                                 {c.payment_ref && <span className="font-mono"> · ref {c.payment_ref}</span>}
@@ -238,27 +255,103 @@ function ProSubscribeForm({ settings, onSubscribe }) {
   );
 }
 
-function CampaignForm({ settings, onCreate }) {
-  const [type, setType] = useState(monetization.CAMPAIGN_TYPES[0].value);
+function readMediaSize(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const done = (value, err) => {
+      URL.revokeObjectURL(url);
+      err ? reject(err) : resolve(value);
+    };
+    if (file.type.startsWith("video/")) {
+      const v = document.createElement("video");
+      v.preload = "metadata";
+      v.onloadedmetadata = () => done({ width: v.videoWidth, height: v.videoHeight, duration: v.duration });
+      v.onerror = () => done(null, new Error("Couldn't read that video."));
+      v.src = url;
+    } else {
+      const img = new Image();
+      img.onload = () => done({ width: img.naturalWidth, height: img.naturalHeight });
+      img.onerror = () => done(null, new Error("Couldn't read that image."));
+      img.src = url;
+    }
+  });
+}
+
+// Plain-English problem with this file for this ad space, or "" if it's fine.
+function checkBannerFile(file, size, space) {
+  if (!file) return "";
+  if (!space.mimeTypes.includes(file.type)) return `Wrong file type. ${space.note}`;
+  if (file.size > space.maxMb * 1024 * 1024) {
+    return `That file is ${(file.size / 1024 / 1024).toFixed(1)} MB — the limit for this space is ${space.maxMb} MB.`;
+  }
+  if (!size) return "";
+  if (size.duration && size.duration > 30.5) return "Videos can be at most 30 seconds long.";
+  if (size.width < space.minWidth) {
+    return `Too small: ${size.width}×${size.height}px. Use at least ${space.minWidth}px wide (ideal ${space.width}×${space.height}px).`;
+  }
+  const target = space.width / space.height;
+  const actual = size.width / size.height;
+  if (Math.abs(actual - target) / target > space.tolerance) {
+    return `Wrong shape: yours is ${size.width}×${size.height}px. This space needs about ${space.width}×${space.height}px.`;
+  }
+  return "";
+}
+
+function CampaignForm({ adSpaces, onCreate }) {
+  const [placement, setPlacement] = useState(adSpaces.spaces[0].key);
   const [days, setDays] = useState(7);
   const [paymentRef, setPaymentRef] = useState("");
+  const [banner, setBanner] = useState(null);
+  const [bannerSize, setBannerSize] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const priceKey = { 1: "campaign_price_1day", 3: "campaign_price_3day", 7: "campaign_price_7day", 30: "campaign_price_30day" }[days];
-  const price = settings[priceKey];
-  const selectedType = monetization.CAMPAIGN_TYPES.find((t) => t.value === type);
+  const bannerInput = useRef(null);
+
+  const space = adSpaces.spaces.find((s) => s.key === placement);
+  const price = space.prices[days];
+  const bannerProblem = checkBannerFile(banner, bannerSize, space);
+
+  useEffect(() => () => previewUrl && URL.revokeObjectURL(previewUrl), [previewUrl]);
+
+  const clearBanner = () => {
+    setBanner(null);
+    setBannerSize(null);
+    setPreviewUrl("");
+    if (bannerInput.current) bannerInput.current.value = "";
+  };
+
+  const onPickPlacement = (key) => {
+    setPlacement(key);
+    clearBanner(); // a banner sized for one space is rarely right for another
+  };
+
+  const onPickBanner = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBanner(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setBannerSize(null);
+    try {
+      setBannerSize(await readMediaSize(file));
+    } catch {
+      setBannerSize(null); // the server still checks file type and size
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    if (!banner) return setError("Please upload your banner (step 3).");
+    if (bannerProblem) return setError(bannerProblem);
     if (paymentRef.trim().length < 4) {
-      setError("Enter the OffPay payment reference for this campaign (at least 4 characters).");
-      return;
+      return setError("Enter the OffPay payment reference for this campaign (at least 4 characters).");
     }
     setSubmitting(true);
     try {
-      await onCreate(type, days, paymentRef.trim());
+      await onCreate({ placement, durationDays: days, paymentRef: paymentRef.trim(), bannerFile: banner });
       setPaymentRef("");
+      clearBanner();
     } catch (err) {
       setError(err?.message || "Couldn't start this campaign.");
     } finally {
@@ -268,78 +361,130 @@ function CampaignForm({ settings, onCreate }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* 1. Campaign type */}
+      {/* 1. Ad space */}
       <div>
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink/45">1. Choose a campaign type</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {monetization.CAMPAIGN_TYPES.map((t) => {
-            const Icon = TYPE_ICONS[t.icon] || IconMegaphone;
-            const active = type === t.value;
-            return (
-              <button
-                key={t.value}
-                type="button"
-                onClick={() => setType(t.value)}
-                aria-pressed={active}
-                className={`relative rounded-xl border p-4 text-left transition ${
-                  active ? "border-ink bg-ink text-paper shadow-sm" : "border-ink/12 bg-white hover:border-ink/30"
-                }`}
-              >
-                {active && (
-                  <span className="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full bg-paper text-ink">
-                    <IconCheck className="h-3 w-3" />
-                  </span>
-                )}
-                <span
-                  className={`grid h-9 w-9 place-items-center rounded-full ${active ? "bg-paper/15" : "bg-ink/5 text-ink/60"}`}
-                >
-                  <Icon className="h-4.5 w-4.5" />
-                </span>
-                <p className="mt-3 text-sm font-semibold">{t.label}</p>
-                <p className={`mt-1 text-xs leading-snug ${active ? "text-paper/70" : "text-ink/50"}`}>{t.description}</p>
-              </button>
-            );
-          })}
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink/45">1. Choose an ad space</p>
+        <div className="overflow-hidden rounded-xl border border-ink/12">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="bg-ink/[0.03] text-xs uppercase tracking-wide text-ink/45">
+                <th className="w-8 px-3 py-2" />
+                <th className="px-3 py-2 font-semibold">Space</th>
+                <th className="px-3 py-2 font-semibold">Size</th>
+                <th className="px-3 py-2 font-semibold">Notes</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {adSpaces.spaces.map((s) => {
+                const Icon = TYPE_ICONS[monetization.PLACEMENT_ICONS[s.key]] || IconMegaphone;
+                const active = placement === s.key;
+                return (
+                  <tr
+                    key={s.key}
+                    onClick={() => onPickPlacement(s.key)}
+                    aria-pressed={active}
+                    className={`cursor-pointer transition ${active ? "bg-ink text-paper" : "hover:bg-ink/[0.03]"}`}
+                  >
+                    <td className="px-3 py-3">
+                      <span
+                        className={`grid h-7 w-7 place-items-center rounded-full ${
+                          active ? "bg-paper/15" : "bg-ink/5 text-ink/60"
+                        }`}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 font-semibold">{s.label}</td>
+                    <td className="px-3 py-3 font-mono text-xs">
+                      {s.width}×{s.height}
+                    </td>
+                    <td className={`px-3 py-3 text-xs ${active ? "text-paper/70" : "text-ink/50"}`}>{s.note}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
+        <p className="mt-2 text-xs text-ink/45">{space.description}</p>
       </div>
 
       {/* 2. Duration */}
       <div>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink/45">2. Choose how long it runs</p>
         <div className="grid grid-cols-4 gap-2">
-          {monetization.CAMPAIGN_DURATIONS.map((d) => {
-            const dPriceKey = { 1: "campaign_price_1day", 3: "campaign_price_3day", 7: "campaign_price_7day", 30: "campaign_price_30day" }[d];
-            return (
-              <button
-                key={d}
-                type="button"
-                onClick={() => setDays(d)}
-                className={`rounded-xl border py-3 text-center transition ${
-                  days === d ? "border-ink bg-ink text-paper" : "border-ink/12 text-ink/60 hover:border-ink/30"
-                }`}
-              >
-                <p className="text-sm font-bold">{d} day{d > 1 ? "s" : ""}</p>
-                <p className={`mt-0.5 text-xs ${days === d ? "text-paper/70" : "text-ink/45"}`}>{formatMoney(settings[dPriceKey])}</p>
-              </button>
-            );
-          })}
+          {adSpaces.durations.map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => setDays(d)}
+              className={`rounded-xl border py-3 text-center transition ${
+                days === d ? "border-ink bg-ink text-paper" : "border-ink/12 text-ink/60 hover:border-ink/30"
+              }`}
+            >
+              <p className="text-sm font-bold">
+                {d} day{d > 1 ? "s" : ""}
+              </p>
+              <p className={`mt-0.5 text-xs ${days === d ? "text-paper/70" : "text-ink/45"}`}>{formatMoney(space.prices[d])}</p>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* 3. Summary + OffPay payment */}
+      {/* 3. Banner upload */}
+      <div>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink/45">3. Upload your banner</p>
+        <div className="rounded-xl border border-ink/10 bg-ink/[0.03] p-4">
+          <p className="text-sm font-semibold text-ink">
+            {space.label}: {space.width}×{space.height}px
+          </p>
+          <p className="mt-1 text-xs text-ink/55">
+            {space.note} Up to {space.maxMb} MB, at least {space.minWidth}px wide.
+          </p>
+          <input
+            ref={bannerInput}
+            type="file"
+            accept={space.mimeTypes.join(",")}
+            onChange={onPickBanner}
+            className="mt-3 block w-full text-sm text-ink/70 file:mr-3 file:rounded-full file:border-0 file:bg-ink file:px-4 file:py-2 file:text-xs file:font-semibold file:text-paper"
+          />
+          {banner && (
+            <div className="mt-3 space-y-2">
+              <div className="overflow-hidden rounded-lg border border-ink/10 bg-white">
+                {banner.type.startsWith("video/") ? (
+                  <video src={previewUrl} className="mx-auto max-h-48 w-full object-contain" muted controls />
+                ) : (
+                  <img src={previewUrl} alt="Your banner preview" className="mx-auto max-h-48 w-full object-contain" />
+                )}
+              </div>
+              {bannerSize && (
+                <p className="text-xs text-ink/55">
+                  Your file: {bannerSize.width}×{bannerSize.height}px · {(banner.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              )}
+              {bannerProblem ? (
+                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{bannerProblem}</p>
+              ) : bannerSize ? (
+                <p className="text-sm font-semibold text-emerald-700">✓ This banner fits the {space.label.toLowerCase()}.</p>
+              ) : null}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 4. Summary + OffPay payment */}
       <div className="rounded-xl border border-ink/10 bg-ink/[0.03] p-4">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink/45">3. Pay with OffPay</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink/45">4. Pay with OffPay</p>
             <p className="mt-1 text-sm text-ink/70">
-              {selectedType?.label} · {days} day{days > 1 ? "s" : ""}
+              {space.label} · {days} day{days > 1 ? "s" : ""}
             </p>
           </div>
           <p className="font-display text-2xl font-bold text-ink">{formatMoney(price)}</p>
         </div>
         <p className="mt-3 rounded-lg bg-marigold-soft px-3 py-2 text-xs text-marigold-dark">
-          {settings.offpay_payment_note || "Pay via OffPay, then enter your payment reference below."} Your campaign
-          starts as soon as an admin confirms your payment.
+          Pay {formatMoney(price)} to LAUNCH TIME on OffPay, then enter the reference from your payment below. Your
+          campaign starts as soon as an admin confirms it.
         </p>
         <div className="mt-3">
           <label className="field-label" htmlFor="campaignPaymentRef">
@@ -359,7 +504,7 @@ function CampaignForm({ settings, onCreate }) {
       <ErrorBanner message={error} />
 
       <button type="submit" disabled={submitting} className="btn-accent w-full">
-        {submitting ? "Starting…" : `Start campaign · ${formatMoney(price)}`}
+        {submitting ? "Sending…" : `Submit ad request · ${formatMoney(price)}`}
       </button>
     </form>
   );

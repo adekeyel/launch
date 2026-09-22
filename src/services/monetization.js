@@ -18,51 +18,24 @@ export function listMyBilling() {
 }
 
 // ---- Advertising campaigns ----
-export const CAMPAIGN_TYPES = [
-  {
-    value: "homepage",
-    label: "Homepage featured banner",
-    icon: "megaphone",
-    description: "Your banner rotates in the homepage spotlight — the first thing every visitor sees.",
-  },
-  {
-    value: "sponsored_search",
-    label: "Sponsored search results",
-    icon: "search",
-    description: "Appear at the top when customers search for meals, kitchens or cuisines.",
-  },
-  {
-    value: "category",
-    label: "Category promotion",
-    icon: "menu",
-    description: "Get featured at the top of a food category, like Rice dishes or Drinks.",
-  },
-  {
-    value: "spotlight",
-    label: "Recommended for you spotlight",
-    icon: "star",
-    description: "Show up in the personalised picks customers see based on what they usually order.",
-  },
-  {
-    value: "limited_offer",
-    label: "Limited-time promotion",
-    icon: "clock",
-    description: "Flag a short-term deal or new menu item with an urgency badge.",
-  },
-  {
-    value: "festival",
-    label: "Seasonal / festival campaign",
-    icon: "sparkle",
-    description: "Ride seasonal demand — Christmas, Eid, back-to-school and other high-traffic moments.",
-  },
-];
+// The 5 real ad spaces the site renders — hero/tile drive the home page,
+// top/middle/bottom are the thin strips on browse pages. Sizes and accepted
+// file types come from the backend (utils/adSpaces.js) via getAdSpaces(),
+// this is just the icon mapping for the UI.
+export const PLACEMENT_ICONS = { hero: "megaphone", tile: "menu", top: "search", middle: "star", bottom: "clock" };
 export const CAMPAIGN_DURATIONS = [1, 3, 7, 30];
 
-// A short human-readable label used in receipts, lists and confirmations.
-export const campaignTypeLabel = (value) => CAMPAIGN_TYPES.find((t) => t.value === value)?.label || value;
+export function getAdSpaces() {
+  return api.get("/vendors/me/ad-spaces");
+}
 
-export function createCampaign(campaignType, durationDays, paymentRef) {
-  return api.post("/vendors/me/campaigns", { campaignType, durationDays, paymentRef });
+export function createCampaign({ placement, durationDays, paymentRef, bannerFile }) {
+  const fd = new FormData();
+  fd.set("placement", placement);
+  fd.set("durationDays", String(durationDays));
+  fd.set("paymentRef", paymentRef);
+  fd.set("banner", bannerFile);
+  return api.upload("/vendors/me/campaigns", fd);
 }
 export function listMyCampaigns() {
   return api.get("/vendors/me/campaigns");
