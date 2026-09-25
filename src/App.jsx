@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import { CartProvider } from "./context/CartContext";
 import { ToastProvider } from "./context/ToastContext";
 import { CatalogProvider } from "./context/CatalogContext";
@@ -27,6 +28,7 @@ import FoodForm from "./pages/vendor/FoodForm";
 import ManageOrders from "./pages/vendor/ManageOrders";
 import VendorGrow from "./pages/vendor/VendorGrow";
 import VendorPayouts from "./pages/vendor/VendorPayouts";
+import VendorEarnings from "./pages/vendor/VendorEarnings";
 import VendorReviews from "./pages/vendor/VendorReviews";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -45,6 +47,7 @@ export default function App() {
     <ToastProvider>
       <ContentProvider>
         <AuthProvider>
+          <NotificationProvider>
           <CartProvider>
             <CatalogProvider>
               <Layout>
@@ -151,6 +154,14 @@ export default function App() {
                     element={
                       <ProtectedRoute role="vendor">
                         <VendorGrow />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/vendor/earnings"
+                    element={
+                      <ProtectedRoute role="vendor">
+                        <VendorEarnings />
                       </ProtectedRoute>
                     }
                   />
@@ -265,6 +276,7 @@ export default function App() {
               </Layout>
             </CatalogProvider>
           </CartProvider>
+          </NotificationProvider>
         </AuthProvider>
       </ContentProvider>
     </ToastProvider>

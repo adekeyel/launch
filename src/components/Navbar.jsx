@@ -8,6 +8,7 @@ import CategoryBar from "./CategoryBar";
 import SmartLink from "./SmartLink";
 import { useContent } from "../context/ContentContext";
 import { IconCart, IconHelp, IconMenu, IconUser, IconX } from "./icons";
+import NotificationBell from "./NotificationBell";
 import logoIcon from "../assets/logo-icon.png";
 
 // The top bar's look for each colour an admin can choose (Admin > Site content >
@@ -193,6 +194,10 @@ export default function Navbar() {
                 }
               </HeaderMenu>
             </div>
+
+            {(user?.role === "customer" || user?.role === "vendor") && (
+              <NotificationBell buttonClassName={iconButton} />
+            )}
 
             {showCart && (
               <Link

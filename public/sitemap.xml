@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://launchtime.example.com/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://launchtime.example.com/vendors</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://launchtime.example.com/about</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://launchtime.example.com/founder</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://launchtime.example.com/terms</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.1</priority>
+  </url>
+  <url>
+    <loc>https://launchtime.example.com/privacy</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.1</priority>
+  </url>
+  <!--
+    Individual vendor pages (/vendors/:id) aren't listed here because they're
+    dynamic and change as vendors join — a static file can't keep up. To get
+    those indexed too, the backend would need to generate this file (or a
+    /sitemap-vendors.xml) by looping over active vendors, e.g. an Express
+    route that queries the vendors table and writes the same <url> blocks.
+    Worth doing once you're leaning on organic search for vendor discovery.
+  -->
+</urlset>

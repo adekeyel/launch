@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /vendor/dashboard
+Disallow: /vendor/foods
+Disallow: /vendor/orders
+Disallow: /vendor/grow
+Disallow: /vendor/payouts
+Disallow: /vendor/reviews
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+
+Sitemap: https://launchtime.example.com/sitemap.xml

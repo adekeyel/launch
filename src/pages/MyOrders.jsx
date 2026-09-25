@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { listOrders, getOrder } from "../services/orders";
 import EmptyState from "../components/EmptyState";
@@ -13,6 +13,12 @@ import { IconChevronRight } from "../components/icons";
 import ReviewForm from "../components/ReviewForm";
 import { StarRating } from "../components/StarRating";
 
+// Orders still in play — while any of these exist we poll quietly in the
+// background so a customer watching their food come doesn't have to hit
+// refresh themselves.
+const ACTIVE_STATUSES = new Set(["pending", "preparing", "ready"]);
+const POLL_INTERVAL_MS = 15000;
+
 export default function MyOrders() {
   const location = useLocation();
   const [orders, setOrders] = useState([]);
@@ -21,6 +27,8 @@ export default function MyOrders() {
   const toast = useToast();
   const [expandedId, setExpandedId] = useState(null);
   const [details, setDetails] = useState({});
+  const ordersRef = useRef(orders);
+  ordersRef.current = orders;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,9 +44,50 @@ export default function MyOrders() {
     }
   }, []);
 
+  // Silent refresh for polling: no skeleton flash, no error banner — if it
+  // fails we just try again on the next tick.
+  const refreshQuietly = useCallback(async () => {
+    try {
+      const data = await listOrders();
+      setOrders((current) => {
+        // Preserve object identity for orders that haven't changed, so this
+        // doesn't disturb anything relying on reference equality.
+        const byId = new Map(current.map((o) => [o.id, o]));
+        return data.orders.map((next) => {
+          const prev = byId.get(next.id);
+          return prev && prev.status === next.status && prev.review_rating === next.review_rating ? prev : next;
+        });
+      });
+    } catch (err) {
+      console.error("Background order refresh failed:", err);
+    }
+  }, []);
+
   useEffect(() => {
     load();
   }, [load]);
+
+  // Poll every 15s while there's an active order and the tab is visible.
+  useEffect(() => {
+    const hasActive = () => ordersRef.current.some((o) => ACTIVE_STATUSES.has(o.status));
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible" && hasActive()) {
+        refreshQuietly();
+      }
+    }, POLL_INTERVAL_MS);
+
+    // Also catch up immediately when the tab regains focus.
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && hasActive()) refreshQuietly();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [refreshQuietly]);
 
   // After a review is saved, mark the order as reviewed without refetching.
   const markReviewed = (orderId, rating) => {

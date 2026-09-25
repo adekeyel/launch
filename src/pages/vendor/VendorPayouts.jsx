@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { createSettlement, listMySettlements, listEligibleSettlementOrders } from "../../services/monetization";
+import { Link } from "react-router-dom";
 import VendorTabs from "../../components/VendorTabs";
 import Loader from "../../components/Loader";
 import ErrorBanner from "../../components/ErrorBanner";
@@ -68,7 +69,12 @@ export default function VendorPayouts() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <p className="text-xs font-semibold uppercase tracking-wider text-marigold-dark">Vendor dashboard</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-marigold-dark">
+        <Link to="/vendor/earnings" className="hover:underline">
+          Earnings
+        </Link>{" "}
+        / Payouts
+      </p>
       <h1 className="mt-1 font-display text-3xl font-bold text-ink">Payouts</h1>
       <div className="mt-6">
         <VendorTabs />

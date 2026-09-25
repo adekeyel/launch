@@ -105,6 +105,10 @@ export default function FoodForm({ mode }) {
               )}
             </label>
             <input id="media" type="file" accept="image/*,video/*" className="hidden" onChange={handleFile} />
+            <p className="mt-2 max-w-sm text-xs leading-relaxed text-ink/45">
+              Photos sell the dish — shoot in natural light, use a plain background, and fill the frame with the actual
+              portion a customer will get. Skip flash and stock photos; real, well-lit pictures get more orders.
+            </p>
           </div>
 
           <div>

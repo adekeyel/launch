@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { getPublicSettings } from "../../services/settings";
 import { getMyVendorProfile } from "../../services/vendors";
 import * as monetization from "../../services/monetization";
@@ -76,7 +77,12 @@ export default function VendorGrow() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <p className="text-xs font-semibold uppercase tracking-wider text-marigold-dark">Vendor dashboard</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-marigold-dark">
+        <Link to="/vendor/earnings" className="hover:underline">
+          Earnings
+        </Link>{" "}
+        / Grow
+      </p>
       <h1 className="mt-1 font-display text-3xl font-bold text-ink">Grow your kitchen</h1>
       <div className="mt-6">
         <VendorTabs />
