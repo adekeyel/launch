@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { formatMoney } from "../lib/format";
 import { IconPlus } from "./icons";
 import { optimizedImage } from "../lib/media";
+import { RatingSummary } from "./StarRating";
 
 export default function FoodCard({ food, onAdd, adding }) {
   return (
@@ -30,6 +31,7 @@ export default function FoodCard({ food, onAdd, adding }) {
           {food.name}
         </Link>
         {food.business_name && <p className="mt-0.5 text-xs text-ink/45">{food.business_name}</p>}
+        <RatingSummary avg={food.rating_avg} count={food.rating_count} className="mt-1 text-xs text-ink/50" />
         <div className="mt-auto flex items-center justify-between pt-3">
           <span className="font-mono text-sm font-semibold text-ink">{formatMoney(food.price)}</span>
           {food.vendor_is_open === false ? (

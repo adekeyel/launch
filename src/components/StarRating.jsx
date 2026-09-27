@@ -25,7 +25,10 @@ export function RatingSummary({ avg, count, className = "" }) {
 }
 
 // Tap-to-rate control (a radio group, so it works with a keyboard too).
-export function StarInput({ value, onChange, disabled = false }) {
+// size="lg" (default) is the original 8x8 used on the overall order rating;
+// size="sm" is a more compact 5x5 for rows like per-dish ratings.
+export function StarInput({ value, onChange, disabled = false, size = "lg" }) {
+  const starClass = size === "sm" ? "h-5 w-5" : "h-8 w-8";
   return (
     <div role="radiogroup" aria-label="Your rating" className="inline-flex items-center gap-1">
       {[1, 2, 3, 4, 5].map((n) => (
@@ -39,7 +42,7 @@ export function StarInput({ value, onChange, disabled = false }) {
           onClick={() => onChange(n)}
           className="rounded p-0.5 text-marigold transition hover:scale-110 disabled:opacity-50"
         >
-          <IconStar filled={n <= value} className={`h-8 w-8 ${n <= value ? "" : "text-ink/25"}`} />
+          <IconStar filled={n <= value} className={`${starClass} ${n <= value ? "" : "text-ink/25"}`} />
         </button>
       ))}
     </div>

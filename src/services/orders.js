@@ -48,6 +48,6 @@ export const STATUS_LABEL = {
 };
 
 // One review per delivered order. Resolves with the saved review.
-export function reviewOrder(id, { rating, comment }) {
-  return api.post(`/orders/${id}/review`, { rating, comment });
+export function reviewOrder(id, { rating, comment, items }) {
+  return api.post(`/orders/${id}/review`, { rating, comment, items });
 }

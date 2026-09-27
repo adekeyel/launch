@@ -61,7 +61,7 @@ export default function AdSlot({ placement }) {
   };
 
   return (
-    <div className={`relative w-full ${SIZE[placement]} overflow-hidden bg-ink/5`}>
+    <div className={`relative w-full ${SIZE[placement]} overflow-hidden bg-marigold-soft`}>
       <a
         href={ad.link_url || undefined}
         target={ad.link_url ? "_blank" : undefined}
@@ -71,9 +71,9 @@ export default function AdSlot({ placement }) {
         aria-label={ad.title || "Sponsored"}
       >
         {ad.media_type === "video" ? (
-          <video src={ad.media_url} className="h-full w-full object-cover" autoPlay muted loop playsInline />
+          <video src={ad.media_url} className="h-full w-full object-contain" autoPlay muted loop playsInline />
         ) : (
-          <img src={optimizedImage(ad.media_url, 1600)} alt={ad.title || ""} className="h-full w-full object-cover" />
+          <img src={optimizedImage(ad.media_url, 1600)} alt={ad.title || ""} className="h-full w-full object-contain" />
         )}
       </a>
       <span className="pointer-events-none absolute bottom-0.5 right-1.5 rounded bg-ink/60 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">

@@ -210,6 +210,7 @@ export default function MyOrders() {
                           <ReviewForm
                             orderId={order.id}
                             vendorName={order.business_name}
+                            items={full?.items || []}
                             onSubmitted={(rating) => markReviewed(order.id, rating)}
                           />
                         ))}
