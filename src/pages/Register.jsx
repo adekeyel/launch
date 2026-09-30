@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authErrorMessage } from "../services/auth";
 import { getPublicSettings } from "../services/settings";
+import { registerRider, VEHICLE_TYPES } from "../services/riders";
 import ErrorBanner from "../components/ErrorBanner";
 import { useContent } from "../context/ContentContext";
 
@@ -14,6 +15,8 @@ const initialForm = {
   role: "customer",
   businessName: "",
   address: "",
+  vehicleType: "bike",
+  offpayAccountRef: "",
 };
 
 export default function Register() {
@@ -27,6 +30,7 @@ export default function Register() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [offpayUrl, setOffpayUrl] = useState("");
+  const [riderSubmitted, setRiderSubmitted] = useState(false);
 
   useEffect(() => {
     getPublicSettings()
@@ -41,6 +45,14 @@ export default function Register() {
     setError("");
     setSubmitting(true);
     try {
+      if (form.role === "rider") {
+        // Riders go through their own registration endpoint rather than the
+        // generic one above — it doesn't log the rider in automatically, so
+        // send them to log in afterward instead of straight to a dashboard.
+        await registerRider(form);
+        setRiderSubmitted(true);
+        return;
+      }
       const user = await register(form);
       if (user.role === "vendor") {
         navigate("/vendor/dashboard");
@@ -54,21 +66,38 @@ export default function Register() {
     }
   };
 
+  if (riderSubmitted) {
+    return (
+      <div className="mx-auto flex max-w-md flex-col px-4 py-16 text-center sm:px-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-marigold-dark">Rider application received</p>
+        <h1 className="mt-1 font-display text-3xl font-bold text-ink">You're almost set up</h1>
+        <p className="mt-3 text-sm text-ink/60">
+          We'll verify your OffPay account and approve your rider account shortly. You can log in now — once you're
+          approved, available orders near you will start showing up on your dashboard.
+        </p>
+        <Link to="/login" className="btn-primary mt-6">
+          Go to login
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex max-w-md flex-col px-4 py-16 sm:px-6">
       {copy.eyebrow && <p className="text-xs font-semibold uppercase tracking-wider text-marigold-dark">{t(copy.eyebrow)}</p>}
       <h1 className="mt-1 font-display text-3xl font-bold text-ink">{t(copy.title)}</h1>
 
-      <div className="mt-6 grid grid-cols-2 gap-2 rounded-full border border-ink/15 bg-white p-1">
+      <div className="mt-6 grid grid-cols-3 gap-2 rounded-full border border-ink/15 bg-white p-1">
         {[
           { value: "customer", label: "I'm ordering food" },
           { value: "vendor", label: "I'm a vendor" },
+          { value: "rider", label: "I'm a rider" },
         ].map((opt) => (
           <button
             key={opt.value}
             type="button"
             onClick={() => setForm((f) => ({ ...f, role: opt.value }))}
-            className={`h-10 rounded-full text-sm font-semibold transition ${
+            className={`h-10 rounded-full px-1 text-xs font-semibold transition sm:text-sm ${
               form.role === opt.value ? "bg-ink text-paper" : "text-ink/55 hover:text-ink"
             }`}
           >
@@ -112,6 +141,7 @@ export default function Register() {
           </label>
           <input
             id="phone"
+            required={form.role === "rider"}
             value={form.phone}
             onChange={update("phone")}
             className="field-input"
@@ -182,6 +212,62 @@ export default function Register() {
             <p className="text-xs text-ink/50">
               New vendor accounts start pending review. You can add your menu right away (saved as drafts), but
               customers will only see your kitchen once an admin approves it and verifies your OffPay account.
+            </p>
+          </div>
+        )}
+
+        {form.role === "rider" && (
+          <div className="space-y-4 rounded-xl border border-marigold/30 bg-marigold-soft/40 p-4">
+            <p className="text-xs font-semibold text-marigold-dark">Tell us how you'll deliver</p>
+            <div>
+              <label className="field-label" htmlFor="vehicleType">
+                How do you get around?
+              </label>
+              <select
+                id="vehicleType"
+                value={form.vehicleType}
+                onChange={update("vehicleType")}
+                className="field-input"
+              >
+                {VEHICLE_TYPES.map((v) => (
+                  <option key={v.value} value={v.value}>
+                    {v.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="field-label" htmlFor="offpayAccountRef">
+                Your OffPay account reference
+              </label>
+              <input
+                id="offpayAccountRef"
+                value={form.offpayAccountRef}
+                onChange={update("offpayAccountRef")}
+                className="field-input"
+                placeholder="Paste it here if you already have one"
+              />
+            </div>
+            <div className="rounded-lg border border-ink/10 bg-white p-3 text-xs text-ink/70">
+              <p className="font-semibold text-ink">Every rider needs an OffPay account</p>
+              <p className="mt-1">
+                OffPay is where your delivery earnings are paid. Already have one? Paste your reference above. Don't
+                have one yet? Open one first, then add the reference from your rider profile.
+              </p>
+              {offpayUrl && (
+                <a
+                  href={offpayUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-block font-semibold text-marigold-dark hover:underline"
+                >
+                  Open an OffPay account →
+                </a>
+              )}
+            </div>
+            <p className="text-xs text-ink/50">
+              New rider accounts start pending. Once an admin verifies your OffPay account you'll see available orders
+              near you and can start picking them up.
             </p>
           </div>
         )}

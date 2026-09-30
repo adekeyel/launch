@@ -1,20 +1,13 @@
 import { NavLink } from "react-router-dom";
 
 const TABS = [
-  { to: "/admin", label: "Vendors", end: true },
-  { to: "/admin/content", label: "Site content" },
-  { to: "/admin/orders", label: "Orders" },
-  { to: "/admin/settings", label: "Settings" },
-  { to: "/admin/pages", label: "Pages" },
-  { to: "/admin/ads", label: "Ads" },
-  { to: "/admin/subscriptions", label: "Subscriptions" },
-  { to: "/admin/campaigns", label: "Campaigns" },
-  { to: "/admin/settlements", label: "Settlements" },
-  { to: "/admin/riders", label: "Riders" },
-  { to: "/admin/analytics", label: "Analytics" },
+  { to: "/rider/available", label: "Available orders", end: true },
+  { to: "/rider/deliveries", label: "My deliveries" },
+  { to: "/rider/earnings", label: "Earnings" },
+  { to: "/rider/profile", label: "Profile" },
 ];
 
-export default function AdminTabs() {
+export default function RiderTabs() {
   return (
     <nav className="flex gap-1 overflow-x-auto rounded-full border border-ink/15 bg-white p-1">
       {TABS.map((tab) => (

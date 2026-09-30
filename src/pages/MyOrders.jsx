@@ -11,12 +11,13 @@ import { formatMoney, formatDate, orderCode } from "../lib/format";
 import { orderBreakdown } from "../lib/delivery";
 import { IconChevronRight } from "../components/icons";
 import ReviewForm from "../components/ReviewForm";
+import RiderLocationMap from "../components/RiderLocationMap";
 import { StarRating } from "../components/StarRating";
 
 // Orders still in play — while any of these exist we poll quietly in the
 // background so a customer watching their food come doesn't have to hit
 // refresh themselves.
-const ACTIVE_STATUSES = new Set(["pending", "preparing", "ready"]);
+const ACTIVE_STATUSES = new Set(["pending", "preparing", "ready", "rider_assigned", "picked_up"]);
 const POLL_INTERVAL_MS = 15000;
 
 export default function MyOrders() {
@@ -165,6 +166,15 @@ export default function MyOrders() {
                   {isOpen && (
                     <div className="border-t border-dashed border-line px-5 py-4">
                       <StatusTimeline status={order.status} />
+                      {["rider_assigned", "picked_up"].includes(order.status) && order.delivery_pin && (
+                        <div className="mt-4 flex items-center justify-between rounded-xl border border-marigold/30 bg-marigold-soft px-4 py-3">
+                          <span className="text-sm font-medium text-marigold-dark">Give this code to your rider</span>
+                          <span className="font-mono text-2xl font-bold tracking-[0.3em] text-marigold-dark">
+                            {order.delivery_pin}
+                          </span>
+                        </div>
+                      )}
+                      {["rider_assigned", "picked_up"].includes(order.status) && <RiderLocationMap orderId={order.id} />}
                       {!full ? (
                         <p className="mt-4 text-sm text-ink/45">Loading items…</p>
                       ) : (
@@ -211,6 +221,7 @@ export default function MyOrders() {
                             orderId={order.id}
                             vendorName={order.business_name}
                             items={full?.items || []}
+                            riderId={order.rider_id || null}
                             onSubmitted={(rating) => markReviewed(order.id, rating)}
                           />
                         ))}

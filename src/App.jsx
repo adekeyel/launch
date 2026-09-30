@@ -29,6 +29,10 @@ import ManageOrders from "./pages/vendor/ManageOrders";
 import VendorGrow from "./pages/vendor/VendorGrow";
 import VendorPayouts from "./pages/vendor/VendorPayouts";
 import VendorEarnings from "./pages/vendor/VendorEarnings";
+import RiderAvailable from "./pages/rider/RiderAvailable";
+import RiderDeliveries from "./pages/rider/RiderDeliveries";
+import RiderEarnings from "./pages/rider/RiderEarnings";
+import RiderProfile from "./pages/rider/RiderProfile";
 import VendorReviews from "./pages/vendor/VendorReviews";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -40,6 +44,7 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
 import AdminCampaigns from "./pages/admin/AdminCampaigns";
 import AdminSettlements from "./pages/admin/AdminSettlements";
+import AdminRiders from "./pages/admin/AdminRiders";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 
 export default function App() {
@@ -158,6 +163,38 @@ export default function App() {
                     }
                   />
                   <Route
+                    path="/rider/available"
+                    element={
+                      <ProtectedRoute role="rider">
+                        <RiderAvailable />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/rider/deliveries"
+                    element={
+                      <ProtectedRoute role="rider">
+                        <RiderDeliveries />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/rider/earnings"
+                    element={
+                      <ProtectedRoute role="rider">
+                        <RiderEarnings />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/rider/profile"
+                    element={
+                      <ProtectedRoute role="rider">
+                        <RiderProfile />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="/vendor/earnings"
                     element={
                       <ProtectedRoute role="vendor">
@@ -259,6 +296,14 @@ export default function App() {
                     element={
                       <ProtectedRoute role="admin">
                         <AdminSettlements />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/riders"
+                    element={
+                      <ProtectedRoute role="admin">
+                        <AdminRiders />
                       </ProtectedRoute>
                     }
                   />

@@ -23,6 +23,10 @@ export function listOrders(params = {}) {
   return api.get("/orders", params);
 }
 
+export function getOrderRiderLocation(id) {
+  return api.get(`/orders/${id}/rider-location`);
+}
+
 export function getOrder(id) {
   return api.get(`/orders/${id}`);
 }
@@ -43,11 +47,13 @@ export const STATUS_LABEL = {
   pending: "Pending",
   preparing: "Preparing",
   ready: "Ready for pickup",
+  rider_assigned: "Rider on the way to pick up",
+  picked_up: "Out for delivery",
   delivered: "Delivered",
   cancelled: "Cancelled",
 };
 
 // One review per delivered order. Resolves with the saved review.
-export function reviewOrder(id, { rating, comment, items }) {
-  return api.post(`/orders/${id}/review`, { rating, comment, items });
+export function reviewOrder(id, { rating, comment, items, riderRating }) {
+  return api.post(`/orders/${id}/review`, { rating, comment, items, riderRating });
 }

@@ -64,3 +64,17 @@ export function verifyOrderPayment(id) {
 export function getAnalytics() {
   return api.get("/admin/analytics");
 }
+
+// ---- Riders (OffPay verification + payout review) ----
+export function listRiders(params = {}) {
+  return api.get("/admin/riders", params);
+}
+export function setRiderStatus(id, status) {
+  return api.put(`/admin/riders/${id}/status`, { status });
+}
+export function listAllRiderSettlements(params = {}) {
+  return api.get("/admin/rider-settlements", params);
+}
+export function decideRiderSettlement(id, status) {
+  return api.put(`/admin/rider-settlements/${id}`, { status });
+}

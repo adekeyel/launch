@@ -9,12 +9,15 @@ const MAX_COMMENT = 1000;
 // "How was your order?" — shown under a delivered order that hasn't been
 // reviewed yet. onSubmitted(rating) lets the parent switch to the read-only view.
 // `items` (optional) lets the customer also rate individual dishes from this
-// same order — entirely optional, skipping it just submits the overall rating.
-export default function ReviewForm({ orderId, vendorName, items = [], onSubmitted }) {
+// same order, and `riderId` (optional) shows a "rate your rider" row when
+// this order actually had one (self-delivered orders won't pass it) —
+// everything extra here is skippable, only the overall rating is required.
+export default function ReviewForm({ orderId, vendorName, items = [], riderId = null, onSubmitted }) {
   const toast = useToast();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [itemRatings, setItemRatings] = useState({});
+  const [riderRating, setRiderRating] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,7 +36,12 @@ export default function ReviewForm({ orderId, vendorName, items = [], onSubmitte
       const ratedItems = Object.entries(itemRatings)
         .filter(([, r]) => r > 0)
         .map(([foodId, r]) => ({ foodId, rating: r }));
-      await reviewOrder(orderId, { rating, comment: comment.trim(), items: ratedItems });
+      await reviewOrder(orderId, {
+        rating,
+        comment: comment.trim(),
+        items: ratedItems,
+        riderRating: riderId && riderRating > 0 ? riderRating : undefined,
+      });
       toast.success("Thanks for your review.");
       onSubmitted(rating);
     } catch (err) {
@@ -68,6 +76,13 @@ export default function ReviewForm({ orderId, vendorName, items = [], onSubmitte
         placeholder="Tell others what you liked (optional)"
         className="field-input mt-3 h-auto py-2.5"
       />
+
+      {riderId && (
+        <div className="mt-4 flex items-center justify-between border-t border-dashed border-line pt-3">
+          <span className="text-sm font-medium text-ink/70">Rate your rider (optional)</span>
+          <StarInput size="sm" value={riderRating} onChange={setRiderRating} disabled={submitting} />
+        </div>
+      )}
 
       {uniqueItems.length > 0 && (
         <div className="mt-4 space-y-2 border-t border-dashed border-line pt-3">

@@ -5,10 +5,11 @@ import Loader from "../../components/Loader";
 import ErrorBanner from "../../components/ErrorBanner";
 import Toggle from "../../components/Toggle";
 import HoursEditor from "../../components/HoursEditor";
-import { IconUpload } from "../../components/icons";
+import { IconUpload, IconPin } from "../../components/icons";
 import { useToast } from "../../context/ToastContext";
 import { errorMessage } from "../../lib/errors";
 import { defaultHours, normalizeHours } from "../../lib/hours";
+import { getPosition } from "../../lib/geo";
 
 export default function VendorProfile() {
   const toast = useToast();
@@ -19,6 +20,7 @@ export default function VendorProfile() {
   const [savingStatus, setSavingStatus] = useState(false);
   const [savingHours, setSavingHours] = useState(false);
   const [savingDelivery, setSavingDelivery] = useState(false);
+  const [savingPriceTier, setSavingPriceTier] = useState(false);
   const [form, setForm] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -26,6 +28,8 @@ export default function VendorProfile() {
   const [savedDetails, setSavedDetails] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locationNote, setLocationNote] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -40,6 +44,8 @@ export default function VendorProfile() {
         phone: v.phone || "",
         eta: v.eta || "",
         categories: (v.categories || []).join(", "),
+        latitude: v.latitude ?? null,
+        longitude: v.longitude ?? null,
       });
       setHoursEnabled(Boolean(v.opening_hours));
       setHours(v.opening_hours ? normalizeHours(v.opening_hours) : defaultHours());
@@ -151,6 +157,8 @@ export default function VendorProfile() {
       setSavingDelivery
     );
   };
+
+  const handleSetPriceTier = (tier) => saveSetting({ price_tier: tier }, "Price range saved.", setSavingPriceTier);
 
   if (loading) return <Loader label="Loading your shop profile…" />;
   if (!vendor || !form) return null;
@@ -273,6 +281,38 @@ export default function VendorProfile() {
           <div>
             <label className="field-label">Address</label>
             <input value={form.address} onChange={update("address")} className="field-input" />
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                disabled={locating}
+                onClick={async () => {
+                  setLocating(true);
+                  setLocationNote("");
+                  try {
+                    const pos = await getPosition();
+                    setForm((f) => ({ ...f, latitude: pos.lat, longitude: pos.lng }));
+                    setLocationNote("Location captured — save changes to keep it.");
+                  } catch (err) {
+                    setLocationNote(err.message);
+                  } finally {
+                    setLocating(false);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-marigold-dark hover:underline disabled:opacity-50"
+              >
+                <IconPin className="h-3.5 w-3.5" />
+                {locating ? "Getting your location…" : "Use my current location"}
+              </button>
+              {form.latitude != null && (
+                <span className="text-xs text-basil">
+                  ✓ Location set ({Number(form.latitude).toFixed(4)}, {Number(form.longitude).toFixed(4)})
+                </span>
+              )}
+            </div>
+            {locationNote && <p className="mt-1 text-xs text-ink/50">{locationNote}</p>}
+            <p className="mt-1 text-xs text-ink/45">
+              Sets your exact pickup point so riders can find you and sort available orders by distance.
+            </p>
           </div>
           <div>
             <label className="field-label">Phone</label>
@@ -351,6 +391,37 @@ export default function VendorProfile() {
           {savingDelivery ? "Saving…" : "Save delivery settings"}
         </button>
       </form>
+
+      {/* Price range */}
+      <div className="card mt-6 space-y-3 p-5">
+        <h2 className="font-display text-base font-bold text-ink">Price range</h2>
+        <p className="text-sm text-ink/55">
+          A rough signal customers see while browsing — how your prices compare to other kitchens, not your exact menu
+          prices.
+        </p>
+        <div className="flex gap-2">
+          {[
+            { tier: 1, label: "₦", hint: "Budget" },
+            { tier: 2, label: "₦₦", hint: "Mid-range" },
+            { tier: 3, label: "₦₦₦", hint: "Premium" },
+          ].map((opt) => (
+            <button
+              key={opt.tier}
+              type="button"
+              disabled={savingPriceTier}
+              onClick={() => handleSetPriceTier(opt.tier)}
+              className={`flex-1 rounded-xl border px-3 py-3 text-center transition ${
+                vendor.price_tier === opt.tier
+                  ? "border-ink bg-ink text-paper"
+                  : "border-ink/15 bg-white text-ink/70 hover:border-ink/30 hover:text-ink"
+              }`}
+            >
+              <span className="block font-display text-lg font-bold">{opt.label}</span>
+              <span className="block text-xs opacity-75">{opt.hint}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

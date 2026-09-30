@@ -4,6 +4,8 @@ const STYLES = {
   pending: "bg-marigold-soft text-marigold-dark",
   preparing: "bg-marigold-soft text-marigold-dark",
   ready: "bg-basil-soft text-basil",
+  rider_assigned: "bg-basil-soft text-basil",
+  picked_up: "bg-basil-soft text-basil",
   delivered: "bg-basil-soft text-basil",
   cancelled: "bg-chili-soft text-chili",
 };
@@ -16,7 +18,7 @@ export function StatusBadge({ status }) {
   );
 }
 
-const TIMELINE_STEPS = ["pending", "preparing", "ready", "delivered"];
+const TIMELINE_STEPS = ["pending", "preparing", "ready", "rider_assigned", "picked_up", "delivered"];
 
 export function StatusTimeline({ status }) {
   if (status === "cancelled") {

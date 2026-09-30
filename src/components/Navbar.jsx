@@ -69,6 +69,13 @@ function navItemsFor(user) {
       { to: "/vendor/reviews", label: "Reviews" }
     );
   }
+  if (user?.role === "rider") {
+    items.push(
+      { to: "/rider/available", label: "Available orders" },
+      { to: "/rider/deliveries", label: "My deliveries" },
+      { to: "/rider/earnings", label: "Earnings" }
+    );
+  }
   if (user?.role === "admin") items.push({ to: "/admin", label: "Dashboard" });
   return items;
 }
@@ -195,7 +202,7 @@ export default function Navbar() {
               </HeaderMenu>
             </div>
 
-            {(user?.role === "customer" || user?.role === "vendor") && (
+            {(user?.role === "customer" || user?.role === "vendor" || user?.role === "rider") && (
               <NotificationBell buttonClassName={iconButton} />
             )}
 

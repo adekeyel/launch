@@ -124,8 +124,7 @@ export function NotificationProvider({ children }) {
       } else {
         orders.forEach((o) => {
           if (prev[o.id] !== undefined && prev[o.id] !== o.status) {
-            const pinNote = o.status === "rider_assigned" && o.delivery_pin ? ` Your delivery code: ${o.delivery_pin}.` : "";
-            const msg = `Your order ${orderCode(o.id)} from ${o.business_name} is now ${STATUS_LABEL[o.status] || o.status}.${pinNote}`;
+            const msg = `Your order ${orderCode(o.id)} from ${o.business_name} is now ${STATUS_LABEL[o.status] || o.status}.`;
             push(msg, "/orders");
             toast.info(msg, { action: { label: "Track", to: "/orders" } });
           }

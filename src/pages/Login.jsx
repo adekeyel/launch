@@ -28,6 +28,7 @@ export default function Login() {
       const user = await login(form.email.trim(), form.password);
       if (from) navigate(from, { replace: true });
       else if (user.role === "vendor") navigate("/vendor/dashboard");
+      else if (user.role === "rider") navigate("/rider/available");
       else if (user.role === "admin") navigate("/admin");
       else navigate("/");
     } catch (err) {
