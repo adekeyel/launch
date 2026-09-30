@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { authErrorMessage } from "../services/auth";
 import { getPublicSettings } from "../services/settings";
-import { registerRider, VEHICLE_TYPES } from "../services/riders";
+import { VEHICLE_TYPES } from "../services/riders";
 import ErrorBanner from "../components/ErrorBanner";
 import { useContent } from "../context/ContentContext";
 
@@ -30,7 +30,6 @@ export default function Register() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [offpayUrl, setOffpayUrl] = useState("");
-  const [riderSubmitted, setRiderSubmitted] = useState(false);
 
   useEffect(() => {
     getPublicSettings()
@@ -45,17 +44,11 @@ export default function Register() {
     setError("");
     setSubmitting(true);
     try {
-      if (form.role === "rider") {
-        // Riders go through their own registration endpoint rather than the
-        // generic one above — it doesn't log the rider in automatically, so
-        // send them to log in afterward instead of straight to a dashboard.
-        await registerRider(form);
-        setRiderSubmitted(true);
-        return;
-      }
       const user = await register(form);
       if (user.role === "vendor") {
         navigate("/vendor/dashboard");
+      } else if (user.role === "rider") {
+        navigate("/rider/available");
       } else {
         navigate(from || "/", { replace: Boolean(from) });
       }
@@ -65,22 +58,6 @@ export default function Register() {
       setSubmitting(false);
     }
   };
-
-  if (riderSubmitted) {
-    return (
-      <div className="mx-auto flex max-w-md flex-col px-4 py-16 text-center sm:px-6">
-        <p className="text-xs font-semibold uppercase tracking-wider text-marigold-dark">Rider application received</p>
-        <h1 className="mt-1 font-display text-3xl font-bold text-ink">You're almost set up</h1>
-        <p className="mt-3 text-sm text-ink/60">
-          We'll verify your OffPay account and approve your rider account shortly. You can log in now — once you're
-          approved, available orders near you will start showing up on your dashboard.
-        </p>
-        <Link to="/login" className="btn-primary mt-6">
-          Go to login
-        </Link>
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto flex max-w-md flex-col px-4 py-16 sm:px-6">
